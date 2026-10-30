@@ -1,0 +1,3268 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Spillway, Relay e Forecast</title><style>
+@page { size: A4; margin: 18mm 15mm 18mm 15mm; @bottom-center { content: counter(page); font: 9pt 'Segoe UI', sans-serif; color: #52667a; } }
+:root { --ink:#0e1b2c; --ink2:#34495e; --muted:#52667a; --accent:#0f766e; --soft:#e9f1ef; --line:#c5d5d1; --amber:#b45309; --amber-soft:#fef3c7; --blue:#1d4ed8; --blue-soft:#dbeafe; }
+* { box-sizing: border-box; }
+html { font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; color: var(--ink); font-size: 11pt; line-height: 1.55; }
+body { margin: 0 auto; max-width: 960px; padding: 0 24px; }
+.cover { min-height: 92vh; display: flex; flex-direction: column; justify-content: center; border-left: 10px solid var(--accent); padding-left: 28px; page-break-after: always; break-after: page; }
+.cover .kicker { color: var(--accent); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 10pt; }
+.cover h1 { font-size: 34pt; line-height: 1.1; margin: .2em 0 .1em; border: 0; }
+.cover p { color: var(--ink2); font-size: 13pt; margin: .2em 0; }
+.cover .meta { margin-top: 2.4em; font-size: 10pt; color: var(--muted); }
+.toc { page-break-after: always; break-after: page; }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li.l1 { margin-top: .9em; font-weight: 700; font-size: 11.5pt; }
+.toc li.l2 { margin-left: 1.4em; font-size: 10pt; color: var(--ink2); }
+.toc a { color: inherit; text-decoration: none; }
+.toc-title { border: 0; }
+.chapter { page-break-before: always; break-before: page; }
+h1 { font-size: 24pt; line-height: 1.15; margin: 0 0 .6em; padding-bottom: .25em; border-bottom: 3px solid var(--accent); }
+h2 { font-size: 16pt; margin: 1.6em 0 .5em; color: var(--ink); break-after: avoid; }
+h3 { font-size: 12.5pt; margin: 1.3em 0 .4em; color: var(--accent); break-after: avoid; }
+p { margin: .55em 0; }
+ul, ol { padding-left: 1.4em; margin: .5em 0; }
+li { margin: .2em 0; }
+a { color: var(--accent); }
+code { font-family: Consolas, 'Courier New', monospace; font-size: 9.2pt; background: var(--soft); padding: .1em .35em; border-radius: 4px; }
+pre { background: #0e1b2c; color: #e8f0f4; padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 8.8pt; line-height: 1.45; break-inside: avoid; }
+pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+table { border-collapse: collapse; width: 100%; margin: .8em 0; font-size: 9.6pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { background: #0e1b2c; color: #fff; text-align: left; padding: 6px 8px; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:nth-child(even) td { background: #f6faf9; }
+blockquote { margin: 1em 0; padding: .6em 1em; border-left: 5px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0; break-inside: avoid; }
+blockquote p { margin: .3em 0; }
+blockquote.why { border-color: var(--accent); background: var(--soft); }
+blockquote.warn { border-color: var(--amber); background: var(--amber-soft); }
+blockquote.tip { border-color: var(--blue); background: var(--blue-soft); }
+blockquote.sum { border-color: #0e1b2c; background: #eef2f7; }
+figure.diagram { margin: 1em 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; break-inside: avoid; text-align: center; }
+figure.diagram svg { max-width: 100%; height: auto; }
+.mermaid { background: none !important; color: inherit !important; font-size: 10pt; white-space: pre; }
+.mermaid[data-processed] { white-space: normal; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+@media print { body { max-width: none; padding: 0; } a { color: inherit; text-decoration: none; } }
+</style></head><body><header class="cover"><div class="kicker">Documentação do projeto</div><h1>Spillway, Relay e Forecast</h1><p>Documentação geral para o dono do projeto</p><p>Arquitetura, serviços, fluxos e as decisões por trás de cada escolha.</p><div class="meta">Versão de 30/10/2026 · Leonardo Matos</div></header><nav class="toc"><h2 class="toc-title">Sumário</h2><ul><li class="l1"><a href="#1-viso-geral">1. Visão geral</a></li><li class="l2"><a href="#1-1-o-que-voc-construiu-em-uma-pgina">1.1 O que você construiu, em uma página</a></li><li class="l2"><a href="#1-2-o-mapa-do-ecossistema">1.2 O mapa do ecossistema</a></li><li class="l2"><a href="#1-3-como-ler-esta-documentao">1.3 Como ler esta documentação</a></li><li class="l2"><a href="#1-4-os-repositrios">1.4 Os repositórios</a></li><li class="l2"><a href="#1-5-as-cinco-ideias-que-explicam-o-desenho">1.5 As cinco ideias que explicam o desenho</a></li><li class="l1"><a href="#2-spillway-data-o-pipeline-de-dados">2. spillway-data: o pipeline de dados</a></li><li class="l2"><a href="#2-1-o-que-ele-faz">2.1 O que ele faz</a></li><li class="l2"><a href="#2-2-as-fontes-de-dados">2.2 As fontes de dados</a></li><li class="l2"><a href="#2-3-a-arquitetura-em-camadas-bronze-silver-gold">2.3 A arquitetura em camadas (bronze, silver, gold)</a></li><li class="l2"><a href="#2-4-o-que-o-dag-faz-passo-a-passo">2.4 O que o DAG faz, passo a passo</a></li><li class="l2"><a href="#2-5-como-o-nmero-final-calculado-a-regra-de-negcio">2.5 Como o número final é calculado (a regra de negócio)</a></li><li class="l2"><a href="#2-6-o-que-chega-ao-banco">2.6 O que chega ao banco</a></li><li class="l2"><a href="#2-7-backfill-e-reprocessamento">2.7 Backfill e reprocessamento</a></li><li class="l2"><a href="#2-8-onde-roda">2.8 Onde roda</a></li><li class="l2"><a href="#2-9-as-novas-fontes-do-ons-sistema-gua-e-rede">2.9 As novas fontes do ONS (sistema, água e rede)</a></li><li class="l1"><a href="#3-spillway-api-a-api-e-as-regras-de-negcio">3. spillway-api: a API e as regras de negócio</a></li><li class="l2"><a href="#3-1-papel">3.1 Papel</a></li><li class="l2"><a href="#3-2-mapa-das-rotas">3.2 Mapa das rotas</a></li><li class="l2"><a href="#3-3-camadas-da-aplicao">3.3 Camadas da aplicação</a></li><li class="l2"><a href="#3-4-contas-segurana-e-acesso">3.4 Contas, segurança e acesso</a></li><li class="l2"><a href="#3-4-1-quem-pode-ver-o-qu-no-site">3.4.1 Quem pode ver o quê no site</a></li><li class="l2"><a href="#3-5-cache-como-o-site-fica-rpido-sem-ficar-velho">3.5 Cache: como o site fica rápido sem ficar velho</a></li><li class="l2"><a href="#3-6-exportaes-pdf-excel-csv">3.6 Exportações (PDF, Excel, CSV)</a></li><li class="l2"><a href="#3-7-relatrios-e-grficos-dentro-deles">3.7 Relatórios e gráficos dentro deles</a></li><li class="l2"><a href="#3-8-e-mails-modelos-variveis-e-disparos">3.8 E-mails: modelos, variáveis e disparos</a></li><li class="l2"><a href="#3-9-previso-publicada-pelo-banco">3.9 Previsão publicada pelo banco</a></li><li class="l2"><a href="#3-10-migraes-do-banco">3.10 Migrações do banco</a></li><li class="l2"><a href="#3-11-endpoints-do-sistema-eltrico-da-gua-e-da-rede">3.11 Endpoints do sistema elétrico, da água e da rede</a></li><li class="l1"><a href="#4-spillway-web-o-site">4. spillway-web: o site</a></li><li class="l2"><a href="#4-1-papel-e-tecnologia">4.1 Papel e tecnologia</a></li><li class="l2"><a href="#4-2-o-mapa-do-site-menu-por-pergunta">4.2 O mapa do site (menu por pergunta)</a></li><li class="l2"><a href="#4-3-quem-pode-ver-o-qu">4.3 Quem pode ver o quê</a></li><li class="l2"><a href="#4-4-como-as-pginas-carregam-e-por-que-ficam-rpidas">4.4 Como as páginas carregam (e por que ficam rápidas)</a></li><li class="l2"><a href="#4-5-rotas-internas-api">4.5 Rotas internas (/api/*)</a></li><li class="l2"><a href="#4-6-pontos-de-usabilidade-que-valem-registrar">4.6 Pontos de usabilidade que valem registrar</a></li><li class="l2"><a href="#4-7-variveis-de-ambiente-principais">4.7 Variáveis de ambiente principais</a></li><li class="l2"><a href="#4-8-testes-e-qualidade">4.8 Testes e qualidade</a></li><li class="l1"><a href="#5-spillway-infra-a-infraestrutura-na-aws">5. spillway-infra: a infraestrutura na AWS</a></li><li class="l2"><a href="#5-1-papel">5.1 Papel</a></li><li class="l2"><a href="#5-2-a-arquitetura">5.2 A arquitetura</a></li><li class="l2"><a href="#5-3-mdulos-terraform">5.3 Módulos Terraform</a></li><li class="l2"><a href="#5-4-os-usurios-do-banco-e-as-permisses">5.4 Os usuários do banco e as permissões</a></li><li class="l2"><a href="#5-5-decises-de-infraestrutura">5.5 Decisões de infraestrutura</a></li><li class="l2"><a href="#5-6-o-que-falta-para-entrar-no-ar">5.6 O que falta para entrar no ar</a></li><li class="l2"><a href="#5-7-custo-mensal-estimado">5.7 Custo mensal estimado</a></li><li class="l1"><a href="#6-relay-a-plataforma-de-mensagens">6. Relay: a plataforma de mensagens</a></li><li class="l2"><a href="#6-1-o-problema-que-ele-resolve">6.1 O problema que ele resolve</a></li><li class="l2"><a href="#6-2-a-arquitetura">6.2 A arquitetura</a></li><li class="l2"><a href="#6-3-a-vida-de-uma-mensagem">6.3 A vida de uma mensagem</a></li><li class="l2"><a href="#6-4-sequncia-de-um-envio-feliz">6.4 Sequência de um envio feliz</a></li><li class="l2"><a href="#6-5-falhas-e-novas-tentativas">6.5 Falhas e novas tentativas</a></li><li class="l2"><a href="#6-6-troca-de-provedor-e-circuit-breaker">6.6 Troca de provedor e circuit breaker</a></li><li class="l2"><a href="#6-7-limite-de-taxa-para-toda-a-frota">6.7 Limite de taxa para toda a frota</a></li><li class="l2"><a href="#6-8-idempotncia-em-cada-salto">6.8 Idempotência em cada salto</a></li><li class="l2"><a href="#6-9-ordem-por-destinatrio">6.9 Ordem por destinatário</a></li><li class="l2"><a href="#6-9-1-templates-e-campos-dinmicos">6.9.1 Templates e campos dinâmicos</a></li><li class="l2"><a href="#6-10-provedores-reais">6.10 Provedores reais</a></li><li class="l2"><a href="#6-11-a-api-do-relay">6.11 A API do Relay</a></li><li class="l2"><a href="#6-12-observabilidade">6.12 Observabilidade</a></li><li class="l2"><a href="#6-13-nmeros-medidos">6.13 Números medidos</a></li><li class="l2"><a href="#6-14-como-subir-localmente">6.14 Como subir localmente</a></li><li class="l1"><a href="#7-os-satlites-do-relay-gateway-recibos-e-terraform">7. Os satélites do Relay: gateway, recibos e Terraform</a></li><li class="l2"><a href="#7-1-relay-api-gateway-a-porta-de-entrada-simples">7.1 relay-api-gateway: a porta de entrada simples</a></li><li class="l2"><a href="#7-2-relay-receipts-o-que-o-provedor-diz-depois">7.2 relay-receipts: o que o provedor diz depois</a></li><li class="l2"><a href="#7-3-o-que-o-relay-faz-com-o-recibo">7.3 O que o Relay faz com o recibo</a></li><li class="l2"><a href="#7-4-por-que-sqs-entre-as-duas-lambdas-e-no-api-gateway">7.4 Por que SQS entre as duas Lambdas, e não API Gateway</a></li><li class="l2"><a href="#7-5-logs-estruturados">7.5 Logs estruturados</a></li><li class="l2"><a href="#7-6-relay-terraform-tudo-da-aws-do-relay-em-cdigo">7.6 relay-terraform: tudo da AWS do Relay em código</a></li><li class="l1"><a href="#8-spillway-forecast-a-previso-de-risco-de-corte">8. spillway-forecast: a previsão de risco de corte</a></li><li class="l2"><a href="#8-1-o-que-ele-prev">8.1 O que ele prevê</a></li><li class="l2"><a href="#8-2-os-dados">8.2 Os dados</a></li><li class="l2"><a href="#8-3-o-que-o-modelo-recebe-as-variveis">8.3 O que o modelo recebe (as variáveis)</a></li><li class="l2"><a href="#8-4-o-modelo-e-por-que-ele">8.4 O modelo e por que ele</a></li><li class="l2"><a href="#8-5-as-linhas-de-base-contra-o-que-o-modelo-comparado">8.5 As linhas de base (contra o que o modelo é comparado)</a></li><li class="l2"><a href="#8-6-como-se-valida-sem-se-enganar">8.6 Como se valida (sem se enganar)</a></li><li class="l2"><a href="#8-7-resultados-teste-final-2026-04-a-2026-09">8.7 Resultados (teste final, 2026-04 a 2026-09)</a></li><li class="l2"><a href="#8-8-limitaes">8.8 Limitações</a></li><li class="l2"><a href="#8-9-como-a-previso-chega-ao-site">8.9 Como a previsão chega ao site</a></li><li class="l2"><a href="#8-9-1-o-que-a-pgina-mostra">8.9.1 O que a página mostra</a></li><li class="l2"><a href="#8-10-ciclo-automtico-em-produo-local-desde-28-10-2026">8.10 Ciclo automático (em produção local desde 28/10/2026)</a></li><li class="l2"><a href="#8-11-como-rodar">8.11 Como rodar</a></li><li class="l1"><a href="#9-fluxos-de-ponta-a-ponta">9. Fluxos de ponta a ponta</a></li><li class="l2"><a href="#9-1-cadastro-de-um-membro-com-cdigo-por-e-mail">9.1 Cadastro de um membro (com código por e-mail)</a></li><li class="l2"><a href="#9-2-um-novo-ms-do-ons-do-arquivo-ao-e-mail">9.2 Um novo mês do ONS: do arquivo ao e-mail</a></li><li class="l2"><a href="#9-3-ativar-a-newsletter-na-home">9.3 Ativar a newsletter na home</a></li><li class="l2"><a href="#9-4-baixar-a-anlise-em-pdf">9.4 Baixar a análise em PDF</a></li><li class="l2"><a href="#9-5-o-recibo-de-entrega-de-um-e-mail">9.5 O recibo de entrega de um e-mail</a></li><li class="l2"><a href="#9-6-da-previso-ao-site">9.6 Da previsão ao site</a></li><li class="l2"><a href="#9-7-esqueci-a-senha">9.7 Esqueci a senha</a></li><li class="l2"><a href="#9-8-resumo-onde-cada-deciso-aparece">9.8 Resumo: onde cada decisão aparece</a></li><li class="l1"><a href="#10-operao-como-subir-onde-est-cada-coisa-o-que-fazer-quando-algo-quebra">10. Operação: como subir, onde está cada coisa, o que fazer quando algo quebra</a></li><li class="l2"><a href="#10-1-o-mapa-de-portas-ambiente-local">10.1 O mapa de portas (ambiente local)</a></li><li class="l2"><a href="#10-2-subindo-tudo-na-ordem">10.2 Subindo tudo, na ordem</a></li><li class="l2"><a href="#10-3-dados-backfill-e-relatrios">10.3 Dados: backfill e relatórios</a></li><li class="l2"><a href="#10-4-envios-de-e-mail">10.4 Envios de e-mail</a></li><li class="l2"><a href="#10-5-testes-e-verificaes-por-repositrio">10.5 Testes e verificações por repositório</a></li><li class="l2"><a href="#10-6-onde-ficam-segredos-e-configuraes">10.6 Onde ficam segredos e configurações</a></li><li class="l2"><a href="#10-7-lista-de-problemas-que-j-aconteceram-e-a-soluo">10.7 Lista de problemas que já aconteceram (e a solução)</a></li><li class="l2"><a href="#10-8-cuidados-antes-de-alterar-algo">10.8 Cuidados antes de alterar algo</a></li><li class="l1"><a href="#11-as-decises-de-arquitetura-em-linguagem-simples">11. As decisões de arquitetura, em linguagem simples</a></li><li class="l2"><a href="#11-1-spillway-adrs-do-spillway-api">11.1 Spillway (ADRs do spillway-api)</a></li><li class="l2"><a href="#11-2-relay-adrs-do-relay">11.2 Relay (ADRs do relay)</a></li><li class="l2"><a href="#11-3-relay-receipts">11.3 Relay-receipts</a></li><li class="l2"><a href="#11-4-forecast">11.4 Forecast</a></li><li class="l2"><a href="#11-5-decises-de-produto-e-de-experincia">11.5 Decisões de produto e de experiência</a></li><li class="l2"><a href="#11-6-novas-fontes-do-ons">11.6 Novas fontes do ONS</a></li><li class="l1"><a href="#12-estado-atual-pendncias-e-riscos">12. Estado atual, pendências e riscos</a></li><li class="l2"><a href="#12-1-o-que-est-pronto-e-funcionando-no-seu-computador">12.1 O que está pronto e funcionando (no seu computador)</a></li><li class="l2"><a href="#12-2-o-que-foi-concludo-por-ltimo-e-o-que-est-aberto">12.2 O que foi concluído por último e o que está aberto</a></li><li class="l2"><a href="#12-3-o-que-ainda-no-existe">12.3 O que ainda não existe</a></li><li class="l2"><a href="#12-4-riscos-e-pontos-de-ateno">12.4 Riscos e pontos de atenção</a></li><li class="l2"><a href="#12-5-prximos-passos-sugeridos">12.5 Próximos passos sugeridos</a></li><li class="l2"><a href="#12-6-resumo-em-nmeros">12.6 Resumo em números</a></li><li class="l2"><a href="#12-7-novas-fontes-do-ons-fases-0-a-4">12.7 Novas fontes do ONS (fases 0 a 4)</a></li><li class="l1"><a href="#13-glossrio">13. Glossário</a></li><li class="l2"><a href="#setor-eltrico">Setor elétrico</a></li><li class="l2"><a href="#dados-e-engenharia">Dados e engenharia</a></li><li class="l2"><a href="#relay-e-mensageria">Relay e mensageria</a></li><li class="l2"><a href="#previso-e-aprendizado-de-mquina">Previsão e aprendizado de máquina</a></li></ul></nav><section class="chapter"><h1 id="1-viso-geral">1. Visão geral</h1>
+<h2 id="1-1-o-que-voc-construiu-em-uma-pgina">1.1 O que você construiu, em uma página</h2>
+<p>Você tem <strong>três produtos que se encaixam</strong>, cada um com um papel claro:</p>
+<table>
+<thead>
+<tr>
+<th>Produto</th>
+<th>Para que serve</th>
+<th>Repositórios</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Spillway</strong></td>
+<td>Mostrar quanta energia eólica e solar o Brasil deixa de gerar (o <em>curtailment</em>), mês a mês, estado a estado, usina a usina. É o site, com área de membros, relatórios, análises e previsão.</td>
+<td><code>spillway-data</code>, <code>spillway-api</code>, <code>spillway-web</code>, <code>spillway-infra</code></td>
+</tr>
+<tr>
+<td><strong>Relay</strong></td>
+<td>Uma plataforma genérica para <strong>enviar mensagens</strong> (e-mail, SMS, WhatsApp, push) com garantias: nada se perde, tenta de novo, troca de fornecedor se um cair. O Spillway usa o Relay para mandar e-mails. Outros produtos futuros poderão usar também.</td>
+<td><code>relay</code>, <code>relay-api-gateway</code>, <code>relay-receipts</code>, <code>relay-terraform</code></td>
+</tr>
+<tr>
+<td><strong>Forecast</strong></td>
+<td>Um modelo de aprendizado de máquina que estima <strong>o risco de corte de energia hora a hora</strong>, e a rotina que o treina, o publica e o mantém atualizado.</td>
+<td><code>spillway-forecast</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote class="sum">
+<p><strong>Em resumo:</strong> o Spillway é o produto que as pessoas veem. O Relay é a &quot;central de correios&quot; que o Spillway usa para falar com elas por e-mail. O Forecast é o &quot;cérebro estatístico&quot; que alimenta a página de previsão.</p>
+</blockquote>
+<h2 id="1-2-o-mapa-do-ecossistema">1.2 O mapa do ecossistema</h2>
+<p>O diagrama mostra quem fala com quem. As setas pontilhadas são caminhos que acontecem em segundo plano (agendados ou assíncronos).</p>
+<figure class="diagram"><pre class="mermaid">flowchart TB
+  ons[&quot;ONS&lt;br/&gt;dados abertos do setor elétrico&quot;]
+  user([&quot;Pessoa&lt;br/&gt;no navegador&quot;])
+  mail([&quot;Caixa de e-mail&lt;br/&gt;da pessoa&quot;])
+
+  subgraph SP[&quot;SPILLWAY&quot;]
+    direction TB
+    data[&quot;spillway-data&lt;br/&gt;pipeline Airflow&lt;br/&gt;bronze, silver, gold&quot;]
+    lake[(&quot;Data lake&lt;br/&gt;arquivos Parquet&quot;)]
+    wh[(&quot;Postgres&lt;br/&gt;warehouse&quot;)]
+    api[&quot;spillway-api&lt;br/&gt;FastAPI&quot;]
+    web[&quot;spillway-web&lt;br/&gt;Next.js&quot;]
+  end
+
+  subgraph RL[&quot;RELAY&quot;]
+    direction TB
+    gw[&quot;relay-api-gateway&quot;]
+    relay[&quot;relay&lt;br/&gt;API, Kafka, workers&quot;]
+    ses[&quot;Amazon SES&quot;]
+    rcpt[&quot;relay-receipts&lt;br/&gt;2 funções Lambda&quot;]
+  end
+
+  subgraph FC[&quot;FORECAST&quot;]
+    fc[&quot;spillway-forecast&lt;br/&gt;treino e publicação&quot;]
+  end
+
+  ons -.-&gt; data
+  data --&gt; lake
+  data --&gt; wh
+  data -. &quot;relatório e aviso&quot; .-&gt; api
+  api --&gt; wh
+  web --&gt; api
+  user --&gt; web
+  api -- &quot;e-mails&quot; --&gt; gw --&gt; relay --&gt; ses --&gt; mail
+  ses -. &quot;entregue, bounce&quot; .-&gt; rcpt -.-&gt; relay
+  lake --&gt; fc
+  fc -- &quot;previsão publicada&quot; --&gt; wh
+</pre></figure>
+<h2 id="1-3-como-ler-esta-documentao">1.3 Como ler esta documentação</h2>
+<ul>
+<li><strong>Capítulos 2 a 5</strong> explicam cada parte do <strong>Spillway</strong> (dados, API, site, infraestrutura).</li>
+<li><strong>Capítulos 6 e 7</strong> explicam o <strong>Relay</strong> em profundidade, porque é a peça com mais decisões de engenharia.</li>
+<li><strong>Capítulo 8</strong> explica o <strong>Forecast</strong>: dados, modelo, por que esse modelo, como é validado e como se mantém atualizado.</li>
+<li><strong>Capítulo 9</strong> junta tudo em <strong>fluxos de ponta a ponta</strong> (diagramas de sequência).</li>
+<li><strong>Capítulo 10</strong> é o <strong>manual de operação</strong>: como subir tudo, portas, variáveis, problemas comuns.</li>
+<li><strong>Capítulo 11</strong> reúne as <strong>decisões de arquitetura</strong> em linguagem simples.</li>
+<li><strong>Capítulo 12</strong> é o <strong>estado atual</strong>: o que está pronto, o que falta e os riscos.</li>
+<li>O <strong>glossário</strong> (capítulo 13) explica os termos técnicos e do setor elétrico.</li>
+</ul>
+<p>Em cada capítulo, as caixas coloridas têm um papel fixo:</p>
+<blockquote class="why">
+<p><strong>Por quê?</strong> explica o motivo de uma decisão (e o que foi descartado).</p>
+</blockquote>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> avisa de um limite, risco ou pendência.</p>
+</blockquote>
+<blockquote class="tip">
+<p><strong>Dica:</strong> mostra um atalho ou um jeito de usar.</p>
+</blockquote>
+<h2 id="1-4-os-repositrios">1.4 Os repositórios</h2>
+<p>Todos ficam na pasta <code>projects</code> e no GitHub do usuário <code>LeonardoMatos07</code>. As pastas locais de quatro deles ainda têm o nome antigo (<code>energia-*</code>) por causa de uma renomeação que ficou pendente.</p>
+<table>
+<thead>
+<tr>
+<th>Pasta local</th>
+<th>Repositório no GitHub</th>
+<th>Linguagem e stack</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>energia-data</code></td>
+<td><code>spillway-data</code></td>
+<td>Python, Airflow, Polars</td>
+<td>Pipeline de dados do ONS</td>
+</tr>
+<tr>
+<td><code>energia-api</code></td>
+<td><code>spillway-api</code></td>
+<td>Python, FastAPI, SQLAlchemy</td>
+<td>API, regras de negócio, e-mails, exportações</td>
+</tr>
+<tr>
+<td><code>energia-web</code></td>
+<td><code>spillway-web</code></td>
+<td>TypeScript, Next.js, Recharts</td>
+<td>O site</td>
+</tr>
+<tr>
+<td><code>energia-infra</code></td>
+<td><code>spillway-infra</code></td>
+<td>Terraform</td>
+<td>Infraestrutura na AWS</td>
+</tr>
+<tr>
+<td><code>relay</code></td>
+<td><code>relay</code></td>
+<td>TypeScript, NestJS, Kafka, Postgres, Redis</td>
+<td>Plataforma de mensagens</td>
+</tr>
+<tr>
+<td><code>relay-api-gateway</code></td>
+<td><code>relay-api-gateway</code></td>
+<td>TypeScript, Node puro</td>
+<td>Porta de entrada simples para o Relay</td>
+</tr>
+<tr>
+<td><code>relay-receipts</code></td>
+<td><code>relay-receipts</code></td>
+<td>Python, AWS Lambda</td>
+<td>Recibos de entrega dos provedores</td>
+</tr>
+<tr>
+<td><code>relay-terraform</code></td>
+<td><code>relay-terraform</code></td>
+<td>Terraform</td>
+<td>SES, filas e Lambdas na AWS</td>
+</tr>
+<tr>
+<td><code>spillway-forecast</code></td>
+<td><code>spillway-forecast</code></td>
+<td>Python, scikit-learn, MLflow</td>
+<td>Previsão de risco de corte</td>
+</tr>
+<tr>
+<td><code>spillway-docs</code></td>
+<td>(local)</td>
+<td>Markdown, Mermaid</td>
+<td>Esta documentação</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o contrato entre os quatro repositórios do Spillway está escrito em <code>spillway-api/docs/phase1-contract.md</code>. Quando algo compartilhado muda (uma rota, uma tabela, uma variável de ambiente), a mudança começa por esse documento.</p>
+</blockquote>
+<h2 id="1-5-as-cinco-ideias-que-explicam-o-desenho">1.5 As cinco ideias que explicam o desenho</h2>
+<ol>
+<li><strong>Dados confiáveis antes de bonitos.</strong> O pipeline guarda o arquivo original, valida, separa linhas ruins e só então publica. O site nunca mostra um número que não passou nas verificações.</li>
+<li><strong>A API é a dona do banco.</strong> Quem produz dados (pipeline, forecast) só escreve nas tabelas que a API definiu. Isso evita que dois sistemas discordem sobre o formato.</li>
+<li><strong>Nada é enviado de forma síncrona se puder falhar.</strong> E-mails vão para o Relay, que guarda, tenta de novo e troca de fornecedor. O site nunca fica esperando o SES.</li>
+<li><strong>Tudo que pode ser repetido é seguro de repetir (idempotência).</strong> Rodar o pipeline duas vezes, reenviar uma requisição, publicar a mesma previsão: o resultado é o mesmo, sem duplicar nada.</li>
+<li><strong>Cada serviço pode cair sozinho.</strong> Se o forecast parar, o site mostra a última previsão com a idade dela. Se o Relay parar, a API não perde o e-mail. Se o SES recusar, o Relay tenta outro caminho.</li>
+</ol>
+</section>
+<section class="chapter"><h1 id="2-spillway-data-o-pipeline-de-dados">2. spillway-data: o pipeline de dados</h1>
+<h2 id="2-1-o-que-ele-faz">2.1 O que ele faz</h2>
+<p>Todo mês o ONS (Operador Nacional do Sistema Elétrico) publica arquivos abertos com a energia eólica e solar que <strong>deixou de ser gerada</strong> por ordem do operador, em intervalos de 30 minutos, por usina e por conjunto de usinas. O <code>spillway-data</code> baixa esses arquivos, valida, transforma, calcula o impacto financeiro e carrega tudo no Postgres, pronto para a API consultar.</p>
+<p>Ele roda no <strong>Apache Airflow</strong> (versão 3.3.2), que é o agendador: ele sabe quais passos existem, em que ordem, o que fazer quando um falha e mostra tudo numa interface (porta 8081 localmente).</p>
+<h2 id="2-2-as-fontes-de-dados">2.2 As fontes de dados</h2>
+<table>
+<thead>
+<tr>
+<th>Fonte (ONS)</th>
+<th>O que traz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Restrição de operação eólica e fotovoltaica, por <strong>conjunto</strong> (cluster)</td>
+<td>O total oficial cortado, a cada 30 minutos. É o número que vale.</td>
+</tr>
+<tr>
+<td>Restrição de operação eólica e fotovoltaica, por <strong>usina</strong></td>
+<td>A estimativa por usina e os motivos do corte</td>
+</tr>
+<tr>
+<td>Geração por usina</td>
+<td>Quanto cada usina realmente gerou</td>
+</tr>
+<tr>
+<td>Capacidade instalada</td>
+<td>Potência de cada usina (MW) e cadastro</td>
+</tr>
+<tr>
+<td>Curva de carga</td>
+<td>Consumo do sistema</td>
+</tr>
+<tr>
+<td>Custo Marginal de Operação (CMO)</td>
+<td>O preço de referência para valorar a energia perdida</td>
+</tr>
+</tbody>
+</table>
+<p>Uma segunda DAG (<code>ons_grid_pipeline</code>) cuida dos dados da rede elétrica; a principal para o site é <code>ons_curtailment_pipeline</code>.</p>
+<h2 id="2-3-a-arquitetura-em-camadas-bronze-silver-gold">2.3 A arquitetura em camadas (bronze, silver, gold)</h2>
+<p>Os dados passam por três estágios. É uma prática comum de engenharia de dados chamada <strong>arquitetura medalhão</strong>:</p>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  ons[&quot;ONS&lt;br/&gt;arquivo do mês&quot;] --&gt;|&quot;baixa se o ETag mudou&quot;| bronze
+  subgraph lake[&quot;Data lake (arquivos)&quot;]
+    bronze[&quot;BRONZE&lt;br/&gt;o arquivo original,&lt;br/&gt;com hash e URL&quot;]
+    silver[&quot;SILVER&lt;br/&gt;tipos corretos,&lt;br/&gt;sem duplicatas,&lt;br/&gt;horário local e UTC&quot;]
+    quarantine[&quot;QUARANTINE&lt;br/&gt;linhas inválidas&lt;br/&gt;separadas&quot;]
+    gold[&quot;GOLD&lt;br/&gt;agregados prontos&lt;br/&gt;para o portal&quot;]
+  end
+  bronze --&gt;|&quot;transform&quot;| silver
+  bronze --&gt;|&quot;linhas ruins&quot;| quarantine
+  silver --&gt;|&quot;validate: regras de qualidade&quot;| gold
+  gold --&gt;|&quot;publish: apaga e reinsere o mês&lt;br/&gt;numa transação&quot;| pg[(&quot;Postgres&lt;br/&gt;warehouse&quot;)]
+</pre></figure>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Guardar o <strong>arquivo original (bronze)</strong> permite reprocessar tudo se descobrirmos um erro de regra, sem depender de o ONS ainda ter o arquivo. A <strong>silver</strong> é a fonte confiável (também usada pelo Forecast). A <strong>quarentena</strong> evita que uma linha estranha derrube a carga inteira: ela é separada e contada, e se passar de 1% a carga é bloqueada.</p>
+</blockquote>
+<h2 id="2-4-o-que-o-dag-faz-passo-a-passo">2.4 O que o DAG faz, passo a passo</h2>
+<p>O DAG principal roda <strong>no dia 3 de cada mês às 06:00</strong> e reprocessa os <strong>últimos 3 meses</strong> (o ONS costuma revisar números já publicados).</p>
+<figure class="diagram"><pre class="mermaid">flowchart TB
+  A[&quot;resolve_periods&lt;br/&gt;decide quais meses&quot;] --&gt; B[&quot;prepare_infrastructure&lt;br/&gt;confere tabelas e bucket&quot;]
+  B --&gt; G
+  subgraph G[&quot;Para cada fonte e cada mês&quot;]
+    direction LR
+    E[&quot;extract&lt;br/&gt;baixa, guarda no bronze&quot;] --&gt; T[&quot;transform&lt;br/&gt;limpa e tipa&quot;] --&gt; V[&quot;validate&lt;br/&gt;quality gates&quot;] --&gt; R[&quot;record&lt;br/&gt;grava no silver&quot;]
+  end
+  G --&gt; P[&quot;publish&lt;br/&gt;modela e carrega o Postgres&quot;]
+  P --&gt; N[&quot;notify_portal&lt;br/&gt;avisa a API para limpar o cache&quot;]
+  N --&gt; RP[&quot;publish_reports&lt;br/&gt;escreve e publica o relatório do mês&quot;]
+  RP --&gt; AN[&quot;announce_report&lt;br/&gt;pede à API para enviar por e-mail&quot;]
+</pre></figure>
+<p>Quatro dessas etapas merecem uma explicação:</p>
+<ol>
+<li><strong>extract</strong> só baixa se o <code>ETag</code> do arquivo mudou. Rodar o DAG de novo sem dado novo não baixa nada.</li>
+<li><strong>validate</strong> aplica as regras de qualidade. Qualquer verificação de nível &quot;ERRO&quot; <strong>bloqueia a publicação</strong>.</li>
+<li><strong>publish</strong> apaga e reinsere o mês inteiro <strong>numa única transação</strong>. Se algo falhar, o banco continua com o dado anterior.</li>
+<li><strong>announce_report</strong> só envia e-mail na <strong>rodada mensal regular</strong> e só para o mês mais recente. Um <em>backfill</em> (carga de anos antigos) <strong>nunca</strong> manda e-mail.</li>
+</ol>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> as duas últimas etapas (<code>publish_reports</code> e <code>announce_report</code>) foram acrescentadas depois, para fechar o ciclo &quot;dado novo, relatório publicado, inscritos avisados&quot;. O DAG foi conferido (importa sem erros e lista as tarefas), mas só dispara de verdade na primeira rodada mensal real.</p>
+</blockquote>
+<h2 id="2-5-como-o-nmero-final-calculado-a-regra-de-negcio">2.5 Como o número final é calculado (a regra de negócio)</h2>
+<p>Este é o coração do produto e está documentado como decisão de arquitetura (ADR 2).</p>
+<ol>
+<li><strong>O número oficial vence.</strong> O total cortado de cada conjunto é a &quot;geração não realizada apurada&quot; (GNRa): potência média em MW multiplicada por 0,5 hora.</li>
+<li><strong>Divide por motivo</strong>, proporcional aos minutos de restrição. Os motivos oficiais do ONS são:
+<ul>
+<li><strong>REL</strong>: razão de confiabilidade elétrica (a rede precisava ser protegida);</li>
+<li><strong>CNF</strong>: indisponibilidade externa (uma linha ou subestação fora da usina estava desligada);</li>
+<li><strong>ENE</strong>: razão energética (havia mais energia do que consumo);</li>
+<li><strong>outros</strong>.</li>
+</ul>
+</li>
+<li><strong>Distribui para as usinas</strong>, proporcional à perda estimada de cada uma nas meias horas em que houve restrição.</li>
+<li><strong>Valora em reais</strong>: cada meia hora cortada é multiplicada pelo CMO do subsistema, limitado pelo piso e teto anuais do PLD.</li>
+</ol>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Estimar por usina sozinho dá números que não fecham com o total oficial. Fazer o oficial mandar e <strong>distribuir</strong> garante que a soma por usina, por estado e por subsistema é sempre igual ao total do ONS. Há uma rotina de <strong>reconciliação</strong> que soma os arquivos originais e compara com o que está no banco (tolerância de 1%).</p>
+</blockquote>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o texto do ADR 2 troca a descrição de REL e CNF (diz que REL é indisponibilidade externa). O site e o ONS usam: REL = confiabilidade elétrica, CNF = indisponibilidade externa. Vale corrigir o texto do ADR.</p>
+</blockquote>
+<h2 id="2-6-o-que-chega-ao-banco">2.6 O que chega ao banco</h2>
+<p>O pipeline escreve <strong>apenas</strong> em tabelas que a API já criou. Se faltarem, ele para e pede para rodar as migrações da API.</p>
+<table>
+<thead>
+<tr>
+<th>Tabela</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>plant</code></td>
+<td>Cadastro das usinas e conjuntos (nome, estado, subsistema, empresa, ponto de conexão)</td>
+</tr>
+<tr>
+<td><code>plant_monthly_curtailment</code></td>
+<td>Por usina e mês: geração, corte total e por motivo, perda em R$, rankings</td>
+</tr>
+<tr>
+<td><code>state_monthly_curtailment</code>, <code>subsystem_monthly_curtailment</code></td>
+<td>Agregados por estado e subsistema (e SIN = Brasil), por fonte</td>
+</tr>
+<tr>
+<td><code>hourly_curtailment</code></td>
+<td>Perfil por hora do dia, tipo de dia (útil ou fim de semana) e mês</td>
+</tr>
+<tr>
+<td><code>load_run</code></td>
+<td>Histórico de cada execução do pipeline</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-7-backfill-e-reprocessamento">2.7 Backfill e reprocessamento</h2>
+<p>Um <strong>backfill</strong> carrega muitos meses de uma vez (foi o que carregou de 2021-10 a 2026-09). Pelo Airflow, dispara-se o DAG com os parâmetros <code>first_month</code> e <code>last_month</code>.</p>
+<blockquote class="tip">
+<p><strong>Dica:</strong> o ONS publica a eólica desde 2021-10 e a solar desde 2024-04. Não existem dados anteriores a essas datas nessa fonte.</p>
+</blockquote>
+<h2 id="2-8-onde-roda">2.8 Onde roda</h2>
+<table>
+<thead>
+<tr>
+<th>Ambiente</th>
+<th>Onde</th>
+<th>Armazenamento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local</td>
+<td>Docker Compose (Airflow, Postgres do warehouse na porta 5433, SeaweedFS como lake)</td>
+<td>SeaweedFS (porta 8333, compatível com S3)</td>
+</tr>
+<tr>
+<td>Produção</td>
+<td>Uma máquina EC2 sem SSH (acesso por SSM) na AWS</td>
+<td>Bucket S3 versionado e criptografado</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-9-as-novas-fontes-do-ons-sistema-gua-e-rede">2.9 As novas fontes do ONS (sistema, água e rede)</h2>
+<p>Além do curtailment, o <code>spillway-data</code> agora carrega mais quatro grupos de dados do ONS. Cada grupo é um <strong>pipeline</strong> (um DAG no Airflow, rodando no dia 3 de cada mês, reprocessando os últimos 3 meses) e escreve em tabelas novas do banco, sempre em transação única e sem duplicar.</p>
+<table>
+<thead>
+<tr>
+<th>Pipeline (DAG)</th>
+<th>Fontes</th>
+<th>Tabelas no banco</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>system</code> (<code>ons_system_pipeline</code>, 07:00)</td>
+<td>balanço de energia, carga, geração por usina, capacidade, intercâmbio nacional e internacional, despacho térmico</td>
+<td><code>subsystem_hourly_balance</code>, <code>subsystem_monthly_generation</code>, <code>power_plant</code>, <code>plant_monthly_generation</code>, <code>interchange_hourly</code>, <code>interchange_monthly</code>, <code>thermal_dispatch_monthly</code></td>
+</tr>
+<tr>
+<td><code>hydrology</code> (<code>ons_hydrology_pipeline</code>, 08:00)</td>
+<td>cadastro de reservatórios, EAR e ENA por subsistema e por reservatório, vazões e cotas, energia vertida turbinável</td>
+<td><code>reservoir</code>, <code>subsystem_storage_daily</code>, <code>reservoir_daily</code>, <code>plant_monthly_spilled_energy</code></td>
+</tr>
+<tr>
+<td><code>grid_assets</code> (<code>ons_grid_assets_pipeline</code>, 09:00)</td>
+<td>linhas de transmissão, subestações, transformadores</td>
+<td><code>transmission_line</code>, <code>substation</code>, <code>transformer_capacity</code> (com histórico)</td>
+</tr>
+</tbody>
+</table>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  ONS[&quot;Dados abertos do ONS&quot;] --&gt; E[&quot;extract&lt;br/&gt;(parquet, ou csv se não existir)&quot;]
+  E --&gt; T[&quot;transform&lt;br/&gt;(tipos, nomes em inglês, rejeitados)&quot;]
+  T --&gt; V[&quot;validate&lt;br/&gt;(quality gates)&quot;]
+  V --&gt; P[&quot;publish&lt;br/&gt;(gold + banco, idempotente)&quot;]
+  P --&gt; A[&quot;API&lt;br/&gt;/v1/system, /v1/hydro, /v1/grid&quot;]
+</pre></figure>
+<blockquote>
+<p><strong>Por quê um pipeline por assunto?</strong> Cada assunto tem seu ritmo, seus arquivos e seus erros. Separar evita que um problema na hidrologia atrase o relatório de curtailment, que já tem e-mail mensal ligado a ele.</p>
+</blockquote>
+<p>O que os dados reais ensinaram (e virou regra no código):</p>
+<ul>
+<li><strong>Intercâmbio:</strong> o ONS lista cada link na direção do fluxo da hora, sempre com valor positivo. A camada silver fixa a direção de cada link (N→NE, N→SE, NE→SE, S→SE) e dá sinal ao fluxo: positivo é de origem para destino.</li>
+<li><strong>Balanço:</strong> o arquivo traz um subsistema <code>SIN</code> (total); ele é recalculado a partir dos quatro subsistemas para não entrar em dobro. Leituras solares levemente negativas à noite (−0,16 MW) são ruído e são toleradas.</li>
+<li><strong>Reservatórios:</strong> a energia armazenada de um reservatório é <strong>negativa</strong> abaixo do volume mínimo (2015: até −83%) e passa de 100% quando ele vaza (até 379%). Só valores absurdos (erro de unidade) bloqueiam a carga.</li>
+<li><strong>Códigos:</strong> o ONS usa três códigos para o mesmo reservatório (planejamento, <code>res_id</code> e <code>cod_usina</code>); o cadastro faz a ponte e alguns reservatórios sem código ligam pelo nome.</li>
+<li><strong>Térmicas novas</strong> podem não ter código de planejamento: a chave cai para o CEG.</li>
+<li><strong>Rede com histórico:</strong> a cada mês o cadastro inteiro é lido e só se escreve uma linha nova quando algo mudou (<code>valid_from</code> e <code>valid_to</code>), para o mapa poder mostrar a expansão da rede.</li>
+</ul>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o backfill da hidrologia começou em <strong>2015</strong> (já carregado localmente até 2026-09); o histórico anterior (EAR e ENA desde 2000, dados hidrológicos desde 1970) é uma execução à parte, bastando recuar <code>HYDRO_START</code>.</p>
+</blockquote>
+</section>
+<section class="chapter"><h1 id="3-spillway-api-a-api-e-as-regras-de-negcio">3. spillway-api: a API e as regras de negócio</h1>
+<h2 id="3-1-papel">3.1 Papel</h2>
+<p>A <code>spillway-api</code> é o <strong>cérebro e o guardião do banco</strong>. Ela:</p>
+<ul>
+<li>é a <strong>única dona do esquema do Postgres</strong> (migrações com Alembic, hoje até a <code>0007</code>);</li>
+<li>responde ao site com os dados de curtailment, usinas, rankings, relatórios e previsão;</li>
+<li>cuida de <strong>contas de membros</strong> (cadastro com código por e-mail, login, sessão);</li>
+<li>gera <strong>PDF, Excel e CSV</strong> das análises e o PDF dos relatórios;</li>
+<li>monta e <strong>dispara e-mails</strong> (código de verificação, relatório mensal, boas-vindas) pelo Relay;</li>
+<li>registra <strong>eventos de uso</strong> do site para a área administrativa.</li>
+</ul>
+<p>Stack: Python 3.12, FastAPI, SQLAlchemy 2, psycopg, Alembic, Pydantic. Testes com pytest (cerca de 240), verificação de tipos com mypy estrito e lint com ruff.</p>
+<h2 id="3-2-mapa-das-rotas">3.2 Mapa das rotas</h2>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Rotas principais</th>
+<th>Quem usa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dados</td>
+<td><code>/v1/curtailment/{subsystems, states/{uf}, summary, hourly}</code>, <code>/v1/plants</code>, <code>/v1/rankings/{operators, connection-points}</code></td>
+<td>Site (páginas de dados)</td>
+</tr>
+<tr>
+<td>Relatórios</td>
+<td><code>/v1/reports</code>, <code>/v1/reports/{slug}</code>, <code>/v1/reports/{slug}/pdf</code></td>
+<td>Site</td>
+</tr>
+<tr>
+<td>Exportações</td>
+<td><code>/v1/exports/analysis.pdf</code>, <code>/v1/exports/analysis.xlsx</code>, <code>/v1/exports/analysis-csv.zip</code></td>
+<td>Site (botão Baixar)</td>
+</tr>
+<tr>
+<td>Conta</td>
+<td><code>/v1/auth/{signup, verify-email, resend-verification, login, me, logout, forgot-password, reset-password}</code> e <code>/v1/auth/me/newsletter</code></td>
+<td>Site</td>
+</tr>
+<tr>
+<td>Newsletter</td>
+<td><code>/v1/newsletter</code> (+ <code>/confirm</code>, <code>/unsubscribe</code>)</td>
+<td>Site</td>
+</tr>
+<tr>
+<td>Previsão</td>
+<td><code>/v1/forecast</code>, <code>/v1/forecast/scopes</code>, <code>/v1/forecast/model</code></td>
+<td>Site</td>
+</tr>
+<tr>
+<td>Uso</td>
+<td><code>/v1/events</code></td>
+<td>Site (rastreio de visitas)</td>
+</tr>
+<tr>
+<td>Administração</td>
+<td><code>/v1/admin/{reports, revalidate, dispatches, leads, usage/*, load-runs}</code></td>
+<td>Pipeline e administradores</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-3-camadas-da-aplicao">3.3 Camadas da aplicação</h2>
+<figure class="diagram"><pre class="mermaid">flowchart TB
+  web[&quot;spillway-web&quot;] --&gt; routers
+  data[&quot;spillway-data&quot;] --&gt; routers
+  subgraph api[&quot;spillway-api&quot;]
+    routers[&quot;Routers FastAPI&lt;br/&gt;validação e rate limit&quot;]
+    cache[&quot;Cache em memória&lt;br/&gt;TTL de 300 s&quot;]
+    queries[&quot;Consultas SQL&lt;br/&gt;agregações no banco&quot;]
+    export[&quot;Exportações&lt;br/&gt;PDF, XLSX, CSV&quot;]
+    mail[&quot;E-mails e templates&lt;br/&gt;disparo mensal&quot;]
+    auth[&quot;Contas e sessões&quot;]
+  end
+  routers --&gt; cache --&gt; queries --&gt; pg[(&quot;Postgres&quot;)]
+  routers --&gt; export
+  routers --&gt; auth --&gt; pg
+  routers --&gt; mail -- &quot;HTTP + chave&quot; --&gt; gw[&quot;relay-api-gateway&quot;]
+</pre></figure>
+<h2 id="3-4-contas-segurana-e-acesso">3.4 Contas, segurança e acesso</h2>
+<p>Há dois mundos de autenticação, por motivos diferentes:</p>
+<table>
+<thead>
+<tr>
+<th>Quem</th>
+<th>Como autentica</th>
+<th>Detalhes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Membros</strong> (público cadastrado)</td>
+<td>E-mail e senha, com <strong>código de 6 dígitos por e-mail</strong> para verificar o endereço</td>
+<td>Senha com <code>scrypt</code>. A sessão é um token aleatório cujo <strong>hash</strong> é guardado (o token em si nunca fica no banco). Dura 14 dias. O código vale 30 minutos e tem limite de tentativas.</td>
+</tr>
+<tr>
+<td><strong>Administradores e máquinas</strong> (pipeline)</td>
+<td><strong>Amazon Cognito</strong> (JWT)</td>
+<td>Administradores com MFA obrigatório. O pipeline usa credenciais de máquina (<em>client credentials</em>) com o escopo <code>admin</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Proteções que valem a pena conhecer:</p>
+<ul>
+<li><strong>Limite de requisições</strong> por IP em cadastro, login, newsletter e downloads (por exemplo, 5 por minuto na newsletter, 20 por minuto nos downloads).</li>
+<li><strong>Cadastro com e-mail já existente</strong> responde <code>409</code> &quot;já existe uma conta&quot;, sem enviar e-mail (decisão sua: a clareza para o usuário vale mais que esconder se o e-mail existe).</li>
+<li>O site repassa o IP real do visitante à API usando um segredo compartilhado (<code>WEB_API_SECRET</code>), para o limite por IP funcionar atrás do proxy.</li>
+</ul>
+<h2 id="3-4-1-quem-pode-ver-o-qu-no-site">3.4.1 Quem pode ver o quê no site</h2>
+<p>Só a <strong>página inicial, a metodologia, a privacidade, o cadastro e o login</strong> são abertas. Painel, estados, usinas, relatórios, análises, comparação, previsão e conta exigem login.</p>
+<blockquote class="why">
+<p><strong>Por quê?</strong> O site passou a ser um produto para membros (gera relacionamento, base para o e-mail mensal). Os dados da API continuam técnicos e abertos; a regra de quem vê o quê é aplicada na camada do site (middleware mais verificação da sessão no layout).</p>
+</blockquote>
+<h2 id="3-5-cache-como-o-site-fica-rpido-sem-ficar-velho">3.5 Cache: como o site fica rápido sem ficar velho</h2>
+<p>Há <strong>três camadas de cache</strong>, cada uma com um motivo:</p>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Duração</th>
+<th>Quem limpa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cache em memória da API</td>
+<td>300 s</td>
+<td>Rota administrativa <code>revalidate</code></td>
+</tr>
+<tr>
+<td>Cache de <code>fetch</code> do Next.js no site</td>
+<td>1 hora (30 minutos na previsão)</td>
+<td>A mesma rota, por <strong>tags</strong> (<code>curtailment</code>, <code>plants</code>, <code>reports</code>)</td>
+</tr>
+<tr>
+<td>Navegador (roteador do Next)</td>
+<td>30 s nas páginas dinâmicas</td>
+<td>Expira sozinho</td>
+</tr>
+</tbody>
+</table>
+<p>Quando o pipeline termina uma carga, ele não espera as horas passarem: avisa a API, que limpa o cache dela e chama o site para invalidar as tags (decisão 4, no capítulo 11).</p>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant D as spillway-data
+  participant A as spillway-api
+  participant W as spillway-web
+  D-&gt;&gt;A: POST /v1/admin/revalidate (token Cognito de máquina)
+  A-&gt;&gt;A: limpa o cache em memória
+  A-&gt;&gt;W: POST /api/revalidate (segredo compartilhado)
+  W-&gt;&gt;W: revalidateTag para curtailment e plants
+  W--&gt;&gt;A: ok
+  A--&gt;&gt;D: ok
+  Note over W: A próxima visita já recebe os dados novos
+</pre></figure>
+<h2 id="3-6-exportaes-pdf-excel-csv">3.6 Exportações (PDF, Excel, CSV)</h2>
+<p>Na página de Análises, o botão <strong>Baixar</strong> tem duas opções:</p>
+<ul>
+<li><strong>PDF</strong>: segue as três visões da tela (Compensação, Empresas e conexões, Perfil horário) com <strong>todas</strong> as linhas e um gráfico horário. Feito com <code>reportlab</code>.</li>
+<li><strong>Dados completos</strong>: um <strong>Excel</strong> com uma aba por tabela (resumo, subsistemas por mês, estados por mês, empresas, pontos de conexão, perfil horário e <strong>todas as usinas por mês</strong>), ou um <strong>ZIP de CSVs</strong> com o mesmo conteúdo.</li>
+</ul>
+<p>O PDF e os dados respeitam o <strong>filtro da tela</strong> (escopo, fonte, período): se você escolhe um mês, sai só aquele mês.</p>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Um CSV só guarda uma tabela. Para entregar &quot;todos os dados&quot; em um único arquivo, o Excel é o formato natural. Para quem quer CSV, o ZIP mantém um arquivo por tabela.</p>
+</blockquote>
+<h2 id="3-7-relatrios-e-grficos-dentro-deles">3.7 Relatórios e gráficos dentro deles</h2>
+<p>Cada relatório mensal é um texto em <strong>Markdown</strong> gerado pelo pipeline. Para ter gráficos, o Markdown aceita um bloco especial:</p>
+<pre><code>```chart
+{&quot;type&quot;:&quot;bar&quot;,&quot;title&quot;:&quot;...&quot;,&quot;unit&quot;:&quot;GWh&quot;,&quot;labels&quot;:[...],&quot;series&quot;:[{&quot;name&quot;:&quot;...&quot;,&quot;values&quot;:[...]}]}
+```
+</code></pre>
+<p>O mesmo texto é desenhado de <strong>três maneiras</strong>: no site com Recharts, no PDF com reportlab e no e-mail com barras feitas de células de tabela HTML (e-mail não executa JavaScript).</p>
+<h2 id="3-8-e-mails-modelos-variveis-e-disparos">3.8 E-mails: modelos, variáveis e disparos</h2>
+<p>O Spillway é dono dos seus modelos de e-mail. O Relay é genérico e só preenche os valores.</p>
+<table>
+<thead>
+<tr>
+<th>Modelo</th>
+<th>Variáveis por pessoa</th>
+<th>Usado quando</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Código de verificação</td>
+<td>nome, código</td>
+<td>Cadastro e reenvio</td>
+</tr>
+<tr>
+<td>Redefinir senha</td>
+<td>nome, código</td>
+<td>Esqueci a senha</td>
+</tr>
+<tr>
+<td>Confirmação de newsletter</td>
+<td>link de confirmação, link de cancelar</td>
+<td>Inscrição pelo formulário</td>
+</tr>
+<tr>
+<td>Boas-vindas à newsletter</td>
+<td>nome, link de cancelar</td>
+<td>Ao ativar a newsletter</td>
+</tr>
+<tr>
+<td>Relatório mensal</td>
+<td>nome, link de cancelar</td>
+<td>Todo mês e no momento da ativação</td>
+</tr>
+<tr>
+<td>Análises</td>
+<td>nome</td>
+<td>Envio opcional por administrador</td>
+</tr>
+</tbody>
+</table>
+<p>O <strong>disparo mensal</strong> (<code>POST /v1/admin/dispatches</code> ou o comando <code>python -m app.dispatch</code>) funciona assim:</p>
+<ul>
+<li>envia <strong>uma vez por tipo e mês</strong> (há uma tabela <code>email_dispatch</code> com restrição de unicidade);</li>
+<li>cada destinatário tem uma <strong>chave de idempotência fixa</strong> (tipo, mês, hash do e-mail): se o envio parar no meio, repete-se sem duplicar;</li>
+<li>o relatório vai <strong>no corpo do e-mail</strong>, abrindo com os quatro indicadores do mês (energia cortada, % de corte, perda estimada, usinas afetadas) e a variação contra o mês anterior.</li>
+</ul>
+<h2 id="3-9-previso-publicada-pelo-banco">3.9 Previsão publicada pelo banco</h2>
+<p>O site mostra a previsão lendo <code>forecast_run</code> e <code>forecast_hourly</code> no próprio Postgres. <strong>A API nunca chama o serviço de ML</strong>. Isso é explicado em detalhe no capítulo 8 e na decisão 7 (capítulo 11).</p>
+<h2 id="3-10-migraes-do-banco">3.10 Migrações do banco</h2>
+<table>
+<thead>
+<tr>
+<th>Versão</th>
+<th>O que criou</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0001</td>
+<td>Esquema inicial (usinas, curtailment mensal, relatórios, newsletter)</td>
+</tr>
+<tr>
+<td>0002</td>
+<td>Membros e sessões</td>
+</tr>
+<tr>
+<td>0003</td>
+<td>Perfil horário</td>
+</tr>
+<tr>
+<td>0004</td>
+<td>Eventos de uso</td>
+</tr>
+<tr>
+<td>0005</td>
+<td>Contagem de tentativas de código</td>
+</tr>
+<tr>
+<td>0006</td>
+<td><code>email_dispatch</code> (envios mensais)</td>
+</tr>
+<tr>
+<td>0007</td>
+<td>Tabelas da previsão (<code>forecast_model</code>, <code>forecast_run</code>, <code>forecast_hourly</code>)</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> em produção, uma migração nova só passa a existir depois do deploy da API. A permissão de escrita nas tabelas novas também precisa estar no <code>spillway-infra</code> (os scripts de permissão classificam toda tabela).</p>
+</blockquote>
+<h2 id="3-11-endpoints-do-sistema-eltrico-da-gua-e-da-rede">3.11 Endpoints do sistema elétrico, da água e da rede</h2>
+<p>Todos públicos, com cache e limpos pela revalidação. As tabelas e colunas estão no contrato (<code>docs/phase1-contract.md</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Rota</th>
+<th>Para que serve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /v1/system/balance</code></td>
+<td>balanço horário por subsistema (hidráulica, térmica, eólica, solar, carga, intercâmbio), até 31 dias</td>
+</tr>
+<tr>
+<td><code>GET /v1/system/generation</code></td>
+<td>geração mensal por fonte, com energia, média, pico e participação</td>
+</tr>
+<tr>
+<td><code>GET /v1/plants/{slug}/generation</code></td>
+<td>geração mensal de uma usina e fator de capacidade</td>
+</tr>
+<tr>
+<td><code>GET /v1/system/interchange</code> e <code>/hourly</code></td>
+<td>intercâmbio entre subsistemas e com outros países</td>
+</tr>
+<tr>
+<td><code>GET /v1/system/thermal-dispatch</code></td>
+<td>geração térmica por motivo do despacho</td>
+</tr>
+<tr>
+<td><code>GET /v1/hydro/subsystems</code></td>
+<td>energia armazenada (EAR) e afluente (ENA) por subsistema, por dia</td>
+</tr>
+<tr>
+<td><code>GET /v1/hydro/reservoirs</code> e <code>/{slug}</code></td>
+<td>reservatórios e a série diária de um deles</td>
+</tr>
+<tr>
+<td><code>GET /v1/hydro/spilled-energy</code></td>
+<td>energia vertida que poderia ter sido turbinada</td>
+</tr>
+<tr>
+<td><code>GET /v1/grid/lines</code> e <code>/substations</code></td>
+<td>linhas e subestações, com filtros de tensão e estado e <code>as_of</code> para ver o cadastro numa data</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Por quê <code>power_plant</code> e não a tabela <code>plant</code>?</strong> A <code>plant</code> só aceita eólica e solar (é a base do produto de curtailment). A frota inteira (hidrelétricas, térmicas, nuclear) ganhou tabela própria, com o mesmo id e a mesma regra de slug.</p>
+</blockquote>
+<p>As migrações 0008 a 0012 criam essas tabelas; a 0012 remove a checagem de faixa da energia armazenada por reservatório, que pode ser negativa.</p>
+</section>
+<section class="chapter"><h1 id="4-spillway-web-o-site">4. spillway-web: o site</h1>
+<h2 id="4-1-papel-e-tecnologia">4.1 Papel e tecnologia</h2>
+<p>É a cara do produto: <strong>Next.js 15</strong> (App Router, React), <strong>Tailwind v4</strong> para o visual, <strong>Recharts</strong> para os gráficos, tema claro e escuro. Fala <strong>somente com a <code>spillway-api</code></strong>; nunca com o banco. Hospedado na <strong>Vercel</strong> (fora da AWS).</p>
+<h2 id="4-2-o-mapa-do-site-menu-por-pergunta">4.2 O mapa do site (menu por pergunta)</h2>
+<p>O menu foi organizado pela pergunta que a pessoa traz, não pelo tipo de página:</p>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  home[&quot;Início (aberto)&quot;] --&gt; painel
+  subgraph membros[&quot;Área de membros&quot;]
+    painel[&quot;PAINEL&lt;br/&gt;Como está o Brasil?&quot;]
+    explorar[&quot;EXPLORAR&lt;br/&gt;Onde?&quot;]
+    analises[&quot;ANÁLISES&lt;br/&gt;Quanto e quem?&quot;]
+    previsao[&quot;PREVISÃO&lt;br/&gt;O que vem?&quot;]
+    relatorios[&quot;RELATÓRIOS&lt;br/&gt;O que houve no mês?&quot;]
+  end
+  explorar --&gt; estados[&quot;Estados&quot;]
+  explorar --&gt; usinas[&quot;Usinas&quot;]
+  explorar --&gt; comparar[&quot;Comparar&quot;]
+  analises --&gt; comp[&quot;Compensação&quot;]
+  analises --&gt; emp[&quot;Empresas e conexões&quot;]
+  analises --&gt; hor[&quot;Perfil horário&quot;]
+  met[&quot;Metodologia (aberta)&quot;]
+  priv[&quot;Privacidade (aberta)&quot;]
+</pre></figure>
+<table>
+<thead>
+<tr>
+<th>Seção</th>
+<th>Pergunta</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Painel</td>
+<td>&quot;Como está o Brasil?&quot;</td>
+<td>Indicadores, séries por fonte e subsistema, filtro de período, link para o relatório do mês</td>
+</tr>
+<tr>
+<td>Explorar</td>
+<td>&quot;Onde?&quot;</td>
+<td>Abas Estados, Usinas e Comparar (Comparar também é um botão nas páginas de estado e usina)</td>
+</tr>
+<tr>
+<td>Análises</td>
+<td>&quot;Quanto, quem e quando?&quot;</td>
+<td>Compensação, empresas e pontos de conexão, perfil horário, com <strong>Baixar</strong> (PDF ou dados)</td>
+</tr>
+<tr>
+<td>Previsão</td>
+<td>&quot;O que vem?&quot;</td>
+<td>Mapa de calor do risco por hora e os resultados do treino do modelo</td>
+</tr>
+<tr>
+<td>Relatórios</td>
+<td>&quot;O que houve no mês?&quot;</td>
+<td>Um relatório por mês, de 2021 em diante, com gráficos e PDF</td>
+</tr>
+<tr>
+<td>Metodologia</td>
+<td>&quot;Como se calcula?&quot;</td>
+<td>Aberta a todos (rodapé)</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="why">
+<p><strong>Por quê?</strong> A navegação antiga misturava geografia (Estados), entidade (Usinas), narrativa (Relatórios), lente analítica (Análises) e ação (Comparar). Agrupar por pergunta reduziu o menu de sete para cinco itens e tirou a redundância (o relatório mensal repetia o Painel em texto; agora o Painel aponta para ele).</p>
+</blockquote>
+<h2 id="4-3-quem-pode-ver-o-qu">4.3 Quem pode ver o quê</h2>
+<figure class="diagram"><pre class="mermaid">flowchart TD
+  req([&quot;Requisição&quot;]) --&gt; mw{&quot;Middleware&lt;br/&gt;tem cookie de sessão?&quot;}
+  mw -- &quot;não, rota de membros&quot; --&gt; login[&quot;Redireciona para /entrar&quot;]
+  mw -- &quot;sim ou rota aberta&quot; --&gt; layout{&quot;Layout da área de membros&lt;br/&gt;a sessão é válida na API?&quot;}
+  layout -- &quot;não&quot; --&gt; login
+  layout -- &quot;sim&quot; --&gt; page[&quot;Renderiza a página&quot;]
+  mw -- &quot;registra a visita&lt;br/&gt;em segundo plano&quot; --&gt; ev[&quot;POST /v1/events&quot;]
+</pre></figure>
+<p>A verificação em duas etapas existe porque o cookie sozinho pode ser forjado. O <strong>middleware</strong> é rápido e barra a maioria. O <strong>layout</strong> confirma a sessão de verdade perguntando à API (<code>/v1/auth/me</code>).</p>
+<h2 id="4-4-como-as-pginas-carregam-e-por-que-ficam-rpidas">4.4 Como as páginas carregam (e por que ficam rápidas)</h2>
+<p>Medições do agente de performance mostraram que <strong>quase toda a lentidão local era o modo de desenvolvimento</strong> (<code>next dev</code> compila cada página na primeira visita). Em produção, uma página responde em 35 a 90 ms. Mesmo assim, três técnicas ajudam:</p>
+<table>
+<thead>
+<tr>
+<th>Técnica</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>loading.tsx</code> na área de membros</td>
+<td>Mostra um esqueleto na hora; o navegador consegue pré-buscar</td>
+</tr>
+<tr>
+<td>Cache do roteador (30 s dinâmicas, 180 s estáticas)</td>
+<td>Voltar a uma página visitada é instantâneo</td>
+</tr>
+<tr>
+<td>Cache de <code>fetch</code> com tags</td>
+<td>Os dados da API ficam por 1 hora e são invalidados pelo pipeline</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> no ambiente local, o cache de <code>fetch</code> do Next fica em <code>.next/cache/fetch-cache</code> e <strong>persiste entre reinícios</strong>. Depois de um backfill ou de apagar um relatório, apague essa pasta, senão o site mostra dados antigos. Em produção, o pipeline invalida as tags sozinho.</p>
+</blockquote>
+<h2 id="4-5-rotas-internas-api">4.5 Rotas internas (<code>/api/*</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Rota</th>
+<th>Função</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/revalidate</code></td>
+<td>Recebe o aviso da API e invalida tags do cache</td>
+</tr>
+<tr>
+<td><code>/api/baixar/analise</code>, <code>/api/baixar/relatorio/[slug]</code></td>
+<td>Proxy de download: confere a sessão, pede o arquivo à API e entrega com o nome certo</td>
+</tr>
+<tr>
+<td><code>/api/session</code></td>
+<td>Dá ao cabeçalho o estado de login</td>
+</tr>
+<tr>
+<td><code>/api/track</code></td>
+<td>Registra eventos de uso</td>
+</tr>
+<tr>
+<td><code>/api/search</code>, <code>/api/auth/*</code></td>
+<td>Busca de usinas e autenticação do administrador</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Por quê o proxy de download?</strong> O navegador baixa do próprio site (mesma origem), a sessão é conferida no servidor e o limite de requisições da API enxerga o IP real do visitante.</p>
+</blockquote>
+<h2 id="4-6-pontos-de-usabilidade-que-valem-registrar">4.6 Pontos de usabilidade que valem registrar</h2>
+<ul>
+<li><strong>Newsletter na home:</strong> quem está logado vê um botão para ativar o e-mail mensal (um clique, sem confirmação, porque o endereço já foi verificado). Depois de ativar, a home só diz &quot;Você habilitou a newsletter mensal&quot;. O cancelamento fica na página &quot;Cancelar newsletter&quot; do rodapé.</li>
+<li><strong>Previsão:</strong> abre com uma barra de progresso de 10 segundos, uma vez por sessão do navegador, com botão &quot;Mostrar agora&quot; e respeito à preferência de menos animação.</li>
+<li><strong>Tema:</strong> o tema escuro vale mesmo antes do script de tema rodar, evitando o &quot;flash&quot; cinza ao recarregar.</li>
+<li><strong>Conta já existente:</strong> o cadastro avisa claramente &quot;já existe uma conta&quot;, com links para entrar e recuperar a senha.</li>
+</ul>
+<h2 id="4-7-variveis-de-ambiente-principais">4.7 Variáveis de ambiente principais</h2>
+<table>
+<thead>
+<tr>
+<th>Variável</th>
+<th>Para quê</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>API_URL</code></td>
+<td>Onde está a API (local: <code>http://127.0.0.1:8000</code>)</td>
+</tr>
+<tr>
+<td><code>WEB_API_SECRET</code></td>
+<td>Segredo compartilhado para repassar o IP real do visitante</td>
+</tr>
+<tr>
+<td><code>REVALIDATE_SECRET</code></td>
+<td>Segredo da rota <code>/api/revalidate</code></td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_SITE_URL</code></td>
+<td>URL pública (canônica, Open Graph)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-8-testes-e-qualidade">4.8 Testes e qualidade</h2>
+<p>Vitest e Testing Library (cerca de 160 testes), ESLint, Prettier e TypeScript estrito. O CI também roda auditoria de dependências e varredura de segredos.</p>
+</section>
+<section class="chapter"><h1 id="5-spillway-infra-a-infraestrutura-na-aws">5. spillway-infra: a infraestrutura na AWS</h1>
+<h2 id="5-1-papel">5.1 Papel</h2>
+<p>Define <strong>toda a infraestrutura do Spillway em código</strong> (Terraform), na região <strong>sa-east-1 (São Paulo)</strong>. Nada é criado clicando no console: o que está no repositório é o que existe. O site em si roda na <strong>Vercel</strong>, fora da AWS.</p>
+<h2 id="5-2-a-arquitetura">5.2 A arquitetura</h2>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  user([&quot;Visitante&quot;]) --&gt; vercel[&quot;spillway-web&lt;br/&gt;Vercel&quot;]
+  vercel -- &quot;busca no servidor&quot; --&gt; cf[&quot;CloudFront&lt;br/&gt;cache de /v1/*&quot;]
+  vercel -- &quot;login do admin&lt;br/&gt;OAuth + PKCE&quot; --&gt; cognito[&quot;Cognito&quot;]
+  subgraph aws[&quot;AWS sa-east-1&quot;]
+    cf -- &quot;HTTPS + cabeçalho secreto&quot; --&gt; alb[&quot;ALB&quot;]
+    subgraph vpc[&quot;VPC&quot;]
+      subgraph pub[&quot;Sub-redes públicas, sem entrada aberta&quot;]
+        alb --&gt; fargate[&quot;ECS Fargate&lt;br/&gt;spillway-api&quot;]
+        ec2[&quot;EC2 t3.large&lt;br/&gt;Airflow&quot;]
+      end
+      subgraph priv[&quot;Sub-redes privadas&quot;]
+        rds[(&quot;RDS PostgreSQL 16&quot;)]
+      end
+    end
+    fargate --&gt; rds
+    ec2 --&gt; rds
+    ec2 --&gt; s3[(&quot;S3&lt;br/&gt;data lake&quot;)]
+    ecr[&quot;ECR&lt;br/&gt;imagens&quot;] -.-&gt; fargate
+    ecr -.-&gt; ec2
+    ses[&quot;SES&lt;br/&gt;e-mail&quot;]
+    cw[&quot;CloudWatch&lt;br/&gt;logs e alarmes&quot;]
+  end
+  ons[&quot;ONS&quot;] -.-&gt; ec2
+</pre></figure>
+<h2 id="5-3-mdulos-terraform">5.3 Módulos Terraform</h2>
+<table>
+<thead>
+<tr>
+<th>Módulo</th>
+<th>O que cria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>network</code></td>
+<td>VPC, 2 sub-redes públicas e 2 privadas em 2 zonas, gateway da internet, endpoint do S3</td>
+</tr>
+<tr>
+<td><code>lake</code></td>
+<td>Bucket do data lake: versionado, criptografado, sem acesso público; <code>bronze/</code> migra para armazenamento barato após 30 dias</td>
+</tr>
+<tr>
+<td><code>ecr</code></td>
+<td>Repositórios de imagens (API e pipeline), com varredura ao enviar</td>
+</tr>
+<tr>
+<td><code>database</code></td>
+<td>RDS PostgreSQL 16 criptografado, privado, backups de 7 dias, senha mestre gerenciada pelo RDS, usuários separados para a API e para o pipeline</td>
+</tr>
+<tr>
+<td><code>api</code></td>
+<td>ALB, cluster ECS, serviço Fargate (0,25 vCPU, 0,5 GB), tarefa de migração</td>
+</tr>
+<tr>
+<td><code>cdn</code></td>
+<td>CloudFront, políticas de cache</td>
+</tr>
+<tr>
+<td><code>auth</code></td>
+<td>Cognito: pool de usuários (MFA obrigatório), grupo <code>admin</code>, clientes para o site e para o pipeline</td>
+</tr>
+<tr>
+<td><code>airflow</code></td>
+<td>EC2 sem SSH e sem porta de entrada (acesso por SSM), com Docker</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>Identidade de domínio no SES (quando há domínio)</td>
+</tr>
+<tr>
+<td><code>observability</code></td>
+<td>Grupos de log, tópico SNS por e-mail, alarmes (5xx do ALB, tarefas, banco, falhas do Airflow)</td>
+</tr>
+<tr>
+<td><code>github_oidc</code></td>
+<td>Papéis para o GitHub Actions entrar na AWS <strong>sem chaves fixas</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-4-os-usurios-do-banco-e-as-permisses">5.4 Os usuários do banco e as permissões</h2>
+<p>O banco tem dois usuários de aplicação com permissões <strong>mínimas e separadas</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Usuário</th>
+<th>Pode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>energia_api</code></td>
+<td>Ler tudo; escrever somente nas tabelas da API (relatórios, membros, sessões, newsletter, envios mensais, eventos)</td>
+</tr>
+<tr>
+<td><code>energia_data</code></td>
+<td>Escrever somente nas tabelas que o pipeline carrega; <strong>não consegue nem ler</strong> dados de membros</td>
+</tr>
+<tr>
+<td><code>energia_forecast</code> (previsto)</td>
+<td>Ler tudo; inserir e apagar nas três tabelas de previsão; atualizar apenas duas colunas de controle</td>
+</tr>
+</tbody>
+</table>
+<p>Um <strong>teste no CI</strong> garante isso: ele sobe um Postgres, aplica as migrações da API e confere que cada usuário escreve só onde deve. Toda tabela nova precisa ser classificada, senão o CI falha. Foi assim que descobrimos que a tabela <code>email_dispatch</code> precisava de permissão para a API.</p>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Se o pipeline for comprometido, ele não alcança os dados das pessoas cadastradas. Se a API tiver um bug, ela não consegue apagar os dados do ONS.</p>
+</blockquote>
+<h2 id="5-5-decises-de-infraestrutura">5.5 Decisões de infraestrutura</h2>
+<blockquote>
+<p><strong>Por quê sem NAT gateway?</strong> Um NAT gateway custa em torno de US$ 40 por mês parado. Em vez dele, as tarefas ficam em sub-redes públicas <strong>sem nenhuma porta de entrada aberta</strong> (só aceitam tráfego vindo do ALB), o banco fica em sub-redes privadas e o S3 é acessado por um endpoint. A conta total fica na faixa de <strong>US$ 170 a 270 por mês</strong>, e a maior parte é a máquina do Airflow.</p>
+</blockquote>
+<blockquote>
+<p><strong>Por quê deploy sem chaves (OIDC)?</strong> Chaves de AWS guardadas no GitHub são um risco: vazam, não expiram. Com OIDC o GitHub Actions prova quem é e recebe uma credencial temporária. Cada repositório tem seu papel, e a aplicação do Terraform só pode ser assumida pelo ambiente <code>production</code>, que exige aprovação de uma pessoa.</p>
+</blockquote>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> os nomes <strong>implantados</strong> continuam com o prefixo antigo <code>energia</code> (repositórios ECR, o escopo <code>energia-api/admin</code> do Cognito, os usuários <code>energia_api</code> e <code>energia_data</code>, o caminho <code>/opt/energia-data</code> na EC2). Renomear esses recursos exige migração de infraestrutura e foi deixado de fora de propósito. Além disso, depois da renomeação dos repositórios no GitHub, a confiança do OIDC aponta para os nomes novos, mas <strong>só vale depois de um <code>terraform apply</code></strong> em produção.</p>
+</blockquote>
+<h2 id="5-6-o-que-falta-para-entrar-no-ar">5.6 O que falta para entrar no ar</h2>
+<p>O repositório tem um <strong>roteiro de primeira implantação</strong> (state bucket, variáveis, plan e apply, migração da API, usuários do banco, primeiro administrador no Cognito, Airflow na EC2, GitHub, Vercel e SES). Nada disso foi aplicado em produção ainda: <strong>o Spillway roda hoje só no seu computador</strong>.</p>
+<h2 id="5-7-custo-mensal-estimado">5.7 Custo mensal estimado</h2>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Ordem de grandeza (US$/mês)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EC2 do Airflow + disco</td>
+<td>90 a 120</td>
+</tr>
+<tr>
+<td>RDS</td>
+<td>20 a 35</td>
+</tr>
+<tr>
+<td>ALB</td>
+<td>20 a 30</td>
+</tr>
+<tr>
+<td>Fargate (1 tarefa)</td>
+<td>10 a 15</td>
+</tr>
+<tr>
+<td>IPv4 público</td>
+<td>15 a 25</td>
+</tr>
+<tr>
+<td>CloudWatch, Secrets, S3, CloudFront, outros</td>
+<td>15 a 40</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>170 a 270</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> é uma estimativa grosseira, não um orçamento. Confira na calculadora da AWS antes de decidir. Reduzir a máquina do Airflow depois de medir o uso é a economia mais óbvia.</p>
+</blockquote>
+</section>
+<section class="chapter"><h1 id="6-relay-a-plataforma-de-mensagens">6. Relay: a plataforma de mensagens</h1>
+<h2 id="6-1-o-problema-que-ele-resolve">6.1 O problema que ele resolve</h2>
+<p>Enviar <strong>uma</strong> mensagem é fácil. Enviar milhões por dia exige responder a perguntas difíceis:</p>
+<table>
+<thead>
+<tr>
+<th>Pergunta</th>
+<th>Resposta do Relay</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O que acontece com uma mensagem aceita quando o Kafka está fora do ar?</td>
+<td>Ela espera numa tabela do Postgres (a <em>outbox</em>) e <strong>nunca se perde</strong>.</td>
+</tr>
+<tr>
+<td>E se o provedor de SMS cair no pico?</td>
+<td>O tráfego <strong>troca de provedor na mesma tentativa</strong>.</td>
+</tr>
+<tr>
+<td>E se o cliente repetir uma requisição que deu timeout?</td>
+<td>A <strong>chave de idempotência</strong> devolve a mensagem original, sem enviar duas vezes.</td>
+</tr>
+<tr>
+<td>Como 12 servidores respeitam um contrato de 1.500 msg/s?</td>
+<td><strong>Um balde de fichas único no Redis</strong>, compartilhado por todos.</td>
+</tr>
+<tr>
+<td>Como dois códigos (OTP) para a mesma pessoa saem na ordem certa?</td>
+<td>A chave do Kafka é <strong>o destinatário</strong>, então ficam na mesma partição.</td>
+</tr>
+</tbody>
+</table>
+<p>Cada resposta é uma decisão com custos e benefícios, registrada em <strong>ADRs</strong> (oito no total).</p>
+<h2 id="6-2-a-arquitetura">6.2 A arquitetura</h2>
+<p>Uma única imagem de software, quatro papéis escolhidos pela variável <code>APP_ROLE</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Papel</th>
+<th>O que faz</th>
+<th>Como escala</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api</code></td>
+<td>Valida, grava mensagem e linha da outbox <strong>numa transação</strong> e responde <code>202</code></td>
+<td>Horizontal (sem estado)</td>
+</tr>
+<tr>
+<td><code>publisher</code></td>
+<td>Esvazia a outbox para o Kafka em lotes</td>
+<td>2 réplicas, 1 ativa (trava de líder)</td>
+</tr>
+<tr>
+<td><code>worker</code></td>
+<td>Consome, limita a taxa, escolhe o provedor, tenta de novo, manda para a fila de mortos</td>
+<td>Horizontal, até o número de partições</td>
+</tr>
+<tr>
+<td><code>migrate</code></td>
+<td>Aplica as migrações do banco com uma trava</td>
+<td>Tarefa pontual</td>
+</tr>
+</tbody>
+</table>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  client([&quot;Cliente&quot;]) -- &quot;POST /v1/messages&lt;br/&gt;Idempotency-Key&quot; --&gt; api[&quot;API&quot;]
+  api -- &quot;uma transação:&lt;br/&gt;mensagem + linha da outbox&quot; --&gt; pg[(&quot;PostgreSQL&quot;)]
+  pub[&quot;Publisher&lt;br/&gt;líder por advisory lock&quot;] -- &quot;FOR UPDATE SKIP LOCKED&quot; --&gt; pg
+  pub -- &quot;chave = canal:destinatário&quot; --&gt; main[[&quot;relay.canal&lt;br/&gt;(Kafka)&quot;]]
+  main --&gt; worker[&quot;Workers&lt;br/&gt;concorrência por chave&quot;]
+  worker -- &quot;balde de fichas (Lua)&quot; --&gt; redis[(&quot;Redis&quot;)]
+  worker -- &quot;prioridade + peso&lt;br/&gt;circuit breakers&quot; --&gt; pa[&quot;Provedor A&quot;]
+  worker -. &quot;failover&quot; .-&gt; pb[&quot;Provedor B&quot;]
+  worker -- &quot;tentativa N falhou&quot; --&gt; retry[[&quot;retry 1: 5 s&lt;br/&gt;retry 2: 30 s&lt;br/&gt;retry 3: 5 min&quot;]]
+  retry --&gt; worker
+  worker -- &quot;esgotou ou erro 4xx&quot; --&gt; dlq[[&quot;relay.canal.dlq&lt;br/&gt;fila de mortos&quot;]]
+  worker -- &quot;status&quot; --&gt; pg
+</pre></figure>
+<h2 id="6-3-a-vida-de-uma-mensagem">6.3 A vida de uma mensagem</h2>
+<figure class="diagram"><pre class="mermaid">stateDiagram-v2
+  [*] --&gt; accepted: API grava mensagem + outbox (202)
+  accepted --&gt; delivered: provedor aceitou
+  accepted --&gt; accepted: falha temporária, vai para a fila de retry
+  accepted --&gt; failed: erro definitivo ou tentativas esgotadas
+  delivered --&gt; [*]
+  failed --&gt; [*]
+</pre></figure>
+<p><code>accepted</code>, <code>delivered</code> e <code>failed</code> dizem <strong>o que o Relay fez</strong>. O que o destinatário recebeu de fato é outra dimensão, o <code>delivery_status</code> (capítulo 7).</p>
+<h2 id="6-4-sequncia-de-um-envio-feliz">6.4 Sequência de um envio feliz</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant C as Cliente
+  participant A as Relay API
+  participant P as Postgres
+  participant U as Publisher
+  participant K as Kafka
+  participant W as Worker
+  participant R as Redis
+  participant S as Provedor (SES)
+  C-&gt;&gt;A: POST /v1/messages + Idempotency-Key
+  A-&gt;&gt;A: valida, renderiza o template
+  A-&gt;&gt;P: BEGIN: INSERT message + INSERT outbox, COMMIT
+  A--&gt;&gt;C: 202 com o id
+  U-&gt;&gt;P: lê lote da outbox (SKIP LOCKED)
+  U-&gt;&gt;K: publica (chave canal:destinatário)
+  U-&gt;&gt;P: apaga as linhas publicadas
+  K-&gt;&gt;W: entrega a mensagem
+  W-&gt;&gt;R: pede uma ficha do balde
+  R--&gt;&gt;W: ok
+  W-&gt;&gt;S: envia (com o id como chave de idempotência)
+  S--&gt;&gt;W: aceito, id do provedor
+  W-&gt;&gt;P: status = delivered (só se ainda accepted)
+</pre></figure>
+<blockquote>
+<p><strong>Por quê a outbox?</strong> Se a API escrevesse no banco <strong>e</strong> no Kafka separadamente, uma queda entre os dois perderia ou duplicaria mensagens. Escrevendo só no Postgres (uma transação) e deixando um processo separado levar para o Kafka, a disponibilidade da API depende apenas do banco. A mensagem aceita é uma promessa cumprida.</p>
+</blockquote>
+<h2 id="6-5-falhas-e-novas-tentativas">6.5 Falhas e novas tentativas</h2>
+<figure class="diagram"><pre class="mermaid">flowchart TD
+  A[&quot;Tentativa de envio&quot;] --&gt; B{&quot;Resultado&quot;}
+  B -- &quot;aceito&quot; --&gt; OK[&quot;delivered&quot;]
+  B -- &quot;erro definitivo&lt;br/&gt;destinatário inválido (4xx)&quot; --&gt; D[&quot;fila de mortos&lt;br/&gt;failed&quot;]
+  B -- &quot;erro temporário&lt;br/&gt;5xx, 429, timeout&quot; --&gt; C{&quot;Há outro provedor&lt;br/&gt;disponível?&quot;}
+  C -- &quot;sim&quot; --&gt; A
+  C -- &quot;não&quot; --&gt; E{&quot;Qual tentativa?&quot;}
+  E -- &quot;1ª&quot; --&gt; R1[&quot;retry em 5 s&quot;]
+  E -- &quot;2ª&quot; --&gt; R2[&quot;retry em 30 s&quot;]
+  E -- &quot;3ª&quot; --&gt; R3[&quot;retry em 5 min&quot;]
+  E -- &quot;esgotou&quot; --&gt; D
+  R1 --&gt; A
+  R2 --&gt; A
+  R3 --&gt; A
+</pre></figure>
+<ul>
+<li><strong>Filas de retry em camadas:</strong> três tópicos, cada um com <strong>um atraso fixo</strong>. Como todas as mensagens de uma camada esperam o mesmo tempo, elas vencem na ordem de chegada. O consumidor olha a primeira, e se ainda não venceu, <strong>pausa a partição</strong> até vencer. Sem temporizador por mensagem.</li>
+<li><strong>Mensagem malformada</strong> (que nem dá para ler) vai direto para a fila de mortos e nunca trava uma partição.</li>
+<li><strong>Fila de mortos</strong> guarda o erro para análise e a mensagem fica <code>failed</code>.</li>
+</ul>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Um cronômetro por mensagem (ou um <code>sleep</code> no consumidor) não escala. Camadas com atraso fixo transformam &quot;espere 30 s&quot; em &quot;pause a partição até o primeiro item vencer&quot;.</p>
+</blockquote>
+<h2 id="6-6-troca-de-provedor-e-circuit-breaker">6.6 Troca de provedor e circuit breaker</h2>
+<p>Cada canal tem uma lista de provedores com <strong>prioridade</strong> e, dentro da mesma prioridade, <strong>peso</strong> (por exemplo, 75% e 25% entre dois gateways de SMS). Cada tentativa percorre a lista: se o primeiro falha de forma recuperável, o próximo é usado <strong>na mesma tentativa</strong>.</p>
+<p>Cada provedor tem um <strong>circuit breaker</strong> (disjuntor):</p>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Janela</td>
+<td>50 chamadas</td>
+</tr>
+<tr>
+<td>Mínimo para decidir</td>
+<td>20 chamadas</td>
+</tr>
+<tr>
+<td>Abre com</td>
+<td>50% de falhas</td>
+</tr>
+<tr>
+<td>Meio aberto depois de</td>
+<td>15 s, com 3 chamadas de prova</td>
+</tr>
+</tbody>
+</table>
+<p>Erros do cliente (destinatário inválido) e a limitação local <strong>não</strong> contam contra a saúde do provedor.</p>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Sem disjuntor, um provedor morto custa um timeout por mensagem. Com ele, custa uma verificação rápida. Os disjuntores vivem <strong>em cada processo</strong>, sem estado compartilhado: simples e sem ponto único de falha, ao preço de cada servidor descobrir a falha por conta própria.</p>
+</blockquote>
+<h2 id="6-7-limite-de-taxa-para-toda-a-frota">6.7 Limite de taxa para toda a frota</h2>
+<p>Os provedores têm contratos por conta (por exemplo, 1.500 SMS por segundo), não por servidor. Com servidores que sobem e descem, um limite por processo estaria errado por um fator igual ao número de réplicas.</p>
+<ul>
+<li>Um <strong>balde de fichas por provedor no Redis</strong>, compartilhado.</li>
+<li>O &quot;pega uma ficha&quot; é um <strong>script Lua</strong>, executado de forma atômica pelo Redis: dois workers nunca gastam a mesma ficha.</li>
+<li>O worker espera até <strong>250 ms</strong> por uma ficha. Passando disso, a tentativa falha de forma recuperável e o roteador <strong>transborda para o próximo provedor</strong>. Um primário saturado manda o excesso para o secundário, em vez de fazer fila.</li>
+<li>Se o Redis cair, os workers <strong>param de entregar</strong>, em vez de violar o contrato: é a escolha conservadora para um recurso pago e limitado.</li>
+</ul>
+<h2 id="6-8-idempotncia-em-cada-salto">6.8 Idempotência em cada salto</h2>
+<p>O sistema é <strong>pelo-menos-uma-vez</strong>, e cada salto remove as duplicatas que consegue:</p>
+<table>
+<thead>
+<tr>
+<th>Salto</th>
+<th>Origem da duplicata</th>
+<th>Proteção</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cliente para API</td>
+<td>Cliente repete</td>
+<td>Cabeçalho <code>Idempotency-Key</code>, único no Postgres. Mesma chave e mesmo conteúdo: devolve o original (<code>200</code>). Mesma chave e conteúdo diferente: <code>409</code>.</td>
+</tr>
+<tr>
+<td>Outbox para Kafka</td>
+<td>Lote republicado</td>
+<td>Produtor idempotente</td>
+</tr>
+<tr>
+<td>Kafka para worker</td>
+<td>Reentrega após queda</td>
+<td>O worker ignora o que já está <code>delivered</code> ou <code>failed</code>, e só atualiza <code>WHERE status = 'accepted'</code></td>
+</tr>
+<tr>
+<td>Worker para provedor</td>
+<td>Queda depois de o provedor aceitar</td>
+<td>O id da mensagem vai como chave de idempotência</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> a única janela restante é inerente a provedores externos: um worker que morre depois de um provedor <strong>sem suporte a chave de idempotência</strong> (SES e Twilio não têm) aceitar a mensagem. O risco é um duplicado raro, documentado.</p>
+</blockquote>
+<h2 id="6-9-ordem-por-destinatrio">6.9 Ordem por destinatário</h2>
+<p>As mensagens são chaveadas por <code>canal:destinatário</code>, então uma pessoa cai sempre na mesma partição. Dentro de um lote, um <strong>executor por chave</strong> processa destinatários diferentes em paralelo (até 64) e o mesmo destinatário em sequência. Os deslocamentos (offsets) só são confirmados depois do lote inteiro, então uma queda <strong>reprocessa</strong> em vez de pular.</p>
+<p>Uma mensagem que passou por retry pode ser ultrapassada por uma mais nova para a mesma pessoa, que é exatamente o que se quer para códigos de uso único (OTP).</p>
+<h2 id="6-9-1-templates-e-campos-dinmicos">6.9.1 Templates e campos dinâmicos</h2>
+<p>O Relay <strong>não guarda modelos</strong>. Cada produto manda o seu HTML e os valores (ADR 8):</p>
+<pre><code class="language-json">{
+  &quot;channel&quot;: &quot;email&quot;,
+  &quot;to&quot;: &quot;ana@example.com&quot;,
+  &quot;subject&quot;: &quot;Seu código: {{code}}&quot;,
+  &quot;body&quot;: &quot;Olá {{name}}, seu código é {{code}}.&quot;,
+  &quot;html&quot;: &quot;&lt;h1&gt;Olá {{name}}&lt;/h1&gt;&lt;p&gt;Código &lt;b&gt;{{code}}&lt;/b&gt;&lt;/p&gt;&quot;,
+  &quot;variables&quot;: { &quot;name&quot;: &quot;Ana&quot;, &quot;code&quot;: &quot;482913&quot; },
+  &quot;metadata&quot;: { &quot;product&quot;: &quot;energia&quot;, &quot;template&quot;: &quot;verification-code&quot; }
+}
+</code></pre>
+<ul>
+<li><code>{{nome}}</code> é substituído em <strong>uma passada</strong> (um valor que contém <code>{{outro}}</code> não é expandido de novo).</li>
+<li>Dentro do HTML, os valores são <strong>escapados</strong>: um nome como <code>&lt;script&gt;</code> nunca vira código na caixa de entrada.</li>
+<li>Placeholder sem variável é erro <code>400</code>, não um e-mail com <code>{{code}}</code> escrito.</li>
+<li>O <code>html</code> só vale para e-mail. O texto continua obrigatório (é a alternativa em texto).</li>
+</ul>
+<blockquote class="why">
+<p><strong>Por quê?</strong> Cada produto tem seus e-mails e seu visual. O Relay não deve conhecer nenhum deles, nem virar um catálogo que cada produto precise &quot;implantar&quot; antes de enviar. Mudar um e-mail não exige deploy do Relay.</p>
+</blockquote>
+<h2 id="6-10-provedores-reais">6.10 Provedores reais</h2>
+<table>
+<thead>
+<tr>
+<th>Provedor</th>
+<th>Canal</th>
+<th>Observações</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Amazon SES</strong></td>
+<td>E-mail</td>
+<td>Usa a cadeia padrão de credenciais da AWS. As tentativas do SDK são desligadas (o Relay faz as suas). O id da mensagem vai numa <em>tag</em> do SES para ligar bounces e reclamações de volta.</td>
+</tr>
+<tr>
+<td><strong>Twilio</strong></td>
+<td>SMS e WhatsApp</td>
+<td>Erros mapeados em definitivos (número inválido, descadastrado) e recuperáveis (limite, 5xx)</td>
+</tr>
+<tr>
+<td><strong>Genérico HTTP</strong></td>
+<td>Qualquer</td>
+<td><code>POST {url}/v1/send</code>. Usado pelos provedores simulados do ambiente local, e fácil de colocar na frente de um gateway interno</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> a conta do SES está no <strong>modo sandbox</strong>: só envia para endereços verificados (hoje, o seu). Para enviar a outras pessoas é preciso pedir a saída do sandbox na AWS.</p>
+</blockquote>
+<h2 id="6-11-a-api-do-relay">6.11 A API do Relay</h2>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Rota</th>
+<th>Para quê</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/messages</code></td>
+<td>Enviar. <code>202</code> com <code>{id, status}</code>. <code>200</code> com <code>Idempotent-Replayed: true</code> para repetição igual. <code>409</code> para mesma chave com conteúdo diferente. <code>400</code> lista todos os erros de validação. <code>422</code> se o destinatário está na lista de supressão.</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/messages/:id</code></td>
+<td>Status, tentativas, provedor usado, último erro, status de entrega e recibos</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/receipts</code></td>
+<td>Recibo de entrega neutro (capítulo 7)</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/v1/suppressions/:canal/:destinatário</code></td>
+<td>Tira alguém da lista de supressão</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health/live</code>, <code>/health/ready</code></td>
+<td>Saúde (processo e dependências)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/metrics</code></td>
+<td>Prometheus</td>
+</tr>
+</tbody>
+</table>
+<p>Com a variável <code>API_KEYS</code> definida, toda chamada exige <code>X-Api-Key</code>.</p>
+<h2 id="6-12-observabilidade">6.12 Observabilidade</h2>
+<p>Prometheus coleta as métricas de cada papel e o Grafana (porta 3030) tem painéis prontos: mensagens aceitas, entregues, tentativas, estado dos disjuntores, idade da outbox, recibos recebidos. O script de carga lê as próprias métricas do serviço, então o relatório mede <strong>a entrega ao provedor</strong>, não só &quot;a API disse aceito&quot;.</p>
+<h2 id="6-13-nmeros-medidos">6.13 Números medidos</h2>
+<p>Teste de carga com k6, tudo rodando no mesmo notebook (Intel i7-7700HQ, 4 núcleos, 16 GB), com provedores simulados, <strong>1 API, 1 publisher e 2 workers</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>250 msg/s por 2 min</th>
+<th>500 msg/s por 2 min</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aceitas (202)</td>
+<td>29.920 de 30.000</td>
+<td>35.585 de 60.000</td>
+</tr>
+<tr>
+<td><code>POST /v1/messages</code> p50 / p95</td>
+<td>18 ms / 210 ms</td>
+<td>1,48 s / 2,65 s</td>
+</tr>
+<tr>
+<td>Entregues ao provedor</td>
+<td>29.920 (100% das aceitas)</td>
+<td>todas, depois do teste</td>
+</tr>
+<tr>
+<td>Entrega ponta a ponta p50 / p95 / p99</td>
+<td>258 ms / 709 ms / 1,43 s</td>
+<td>não medido</td>
+</tr>
+<tr>
+<td>Idade máxima da outbox</td>
+<td>394 ms</td>
+<td>não medido</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Honestidade:</strong> uma API sozinha satura perto de <strong>290 mensagens aceitas por segundo</strong> neste notebook (cada requisição é uma transação no Postgres). A API não tem estado, então escala horizontalmente. Numa corrida anterior, a entrega ficou parada porque meu <code>.env</code> local só consumia o canal de e-mail; ao liberar todos os canais, <strong>dois workers esvaziaram 49 mil mensagens em cerca de 90 s (≈ 540 msg/s)</strong>. Os limiares do k6 foram ultrapassados nas duas corridas, e os números foram publicados como saíram.</p>
+</blockquote>
+<h2 id="6-14-como-subir-localmente">6.14 Como subir localmente</h2>
+<pre><code>cd relay
+docker compose up -d --build api publisher worker postgres redis redpanda
+curl localhost:3000/health/ready
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Serviço</th>
+<th>Porta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API</td>
+<td>3000</td>
+</tr>
+<tr>
+<td>Publisher (métricas)</td>
+<td>3001</td>
+</tr>
+<tr>
+<td>Redpanda (Kafka)</td>
+<td>19092</td>
+</tr>
+<tr>
+<td>Postgres</td>
+<td>5432</td>
+</tr>
+<tr>
+<td>Prometheus / Grafana</td>
+<td>9090 / 3030</td>
+</tr>
+<tr>
+<td>Provedores simulados (SMS, e-mail, WhatsApp, push)</td>
+<td>8091 a 8096</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="tip">
+<p><strong>Dica:</strong> <code>PROVIDERS=providers.real.json</code> troca os simulados pelo SES real; <code>WORKER_CHANNELS</code> controla quais canais os workers consomem. Para testes de carga, use sempre os simulados.</p>
+</blockquote>
+<p>Há também manifestos <strong>Kubernetes</strong> (<code>k8s/</code>) com sondas, requisições de recursos, contêineres sem root, PodDisruptionBudgets e HPAs.</p>
+</section>
+<section class="chapter"><h1 id="7-os-satlites-do-relay-gateway-recibos-e-terraform">7. Os satélites do Relay: gateway, recibos e Terraform</h1>
+<h2 id="7-1-relay-api-gateway-a-porta-de-entrada-simples">7.1 relay-api-gateway: a porta de entrada simples</h2>
+<p>É um servidor Node <strong>sem dependências</strong> que fica na frente do Relay. Quem quer enviar mensagens (como a <code>spillway-api</code>) fala com ele, e ele repassa para a API do Relay.</p>
+<table>
+<thead>
+<tr>
+<th>Responsabilidade</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Autenticação</td>
+<td><code>X-Api-Key</code> dele (<code>GATEWAY_API_KEYS</code>); usa outra chave para falar com o Relay</td>
+</tr>
+<tr>
+<td>Validação rápida</td>
+<td>Formato da requisição e canais habilitados (<code>ALLOWED_CHANNELS</code>); o resto da validação continua sendo do Relay, que é a fonte da verdade</td>
+</tr>
+<tr>
+<td>Passagem</td>
+<td>Repassa <code>Idempotency-Key</code>, <code>html</code>, <code>variables</code> e <code>metadata</code>; devolve os erros do Relay sem alterar</td>
+</tr>
+<tr>
+<td>Limite de corpo</td>
+<td>512 KB (cabe um HTML de e-mail grande)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Por quê um gateway, e não chamar o Relay direto?</strong> O gateway <strong>não pula o Relay</strong>: ele repassa para a mesma API, então a outbox e a idempotência continuam valendo. A vantagem é separar &quot;quem pode enviar&quot; (chaves por produto) de &quot;como se envia&quot; (o Relay), e poder expor só o gateway.</p>
+</blockquote>
+<h2 id="7-2-relay-receipts-o-que-o-provedor-diz-depois">7.2 relay-receipts: o que o provedor diz depois</h2>
+<p>Aceitar uma mensagem não é entregá-la. O SES pode devolver o e-mail minutos depois (<em>bounce</em>), ou a pessoa pode marcar como spam (<em>complaint</em>). Isso precisa voltar para o Relay para duas coisas:</p>
+<ol>
+<li><strong>Atualizar o status de entrega</strong> da mensagem;</li>
+<li><strong>Parar de enviar</strong> para endereços que devolvem ou reclamam, porque isso destrói a reputação do remetente.</li>
+</ol>
+<h3 id="o-caminho-do-recibo">O caminho do recibo</h3>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  relay[&quot;Relay&quot;] -- &quot;envia&quot; --&gt; ses[&quot;Amazon SES&quot;]
+  ses -- &quot;eventos&quot; --&gt; sns[&quot;SNS&lt;br/&gt;(entrega bruta)&quot;]
+  sns --&gt; q1[[&quot;SQS&lt;br/&gt;relay-ses-events&quot;]]
+  q1 --&gt; l1[&quot;Lambda&lt;br/&gt;webhook-ses&lt;br/&gt;traduz o evento do SES&quot;]
+  l1 --&gt; q2[[&quot;SQS&lt;br/&gt;relay-receipts&quot;]]
+  q2 --&gt; l2[&quot;Lambda&lt;br/&gt;relay-receipts&lt;br/&gt;webhook geral&quot;]
+  l2 -- &quot;POST /v1/receipts&quot; --&gt; relay
+  l2 --&gt; ddb[(&quot;DynamoDB&lt;br/&gt;ledger anti-duplicata&quot;)]
+  q1 -. &quot;5 falhas&quot; .-&gt; dlq1[[&quot;DLQ&quot;]]
+  q2 -. &quot;5 falhas&quot; .-&gt; dlq2[[&quot;DLQ&quot;]]
+</pre></figure>
+<p>Duas funções Lambda em <strong>Python</strong>, com papéis bem separados:</p>
+<table>
+<thead>
+<tr>
+<th>Função</th>
+<th>Conhece</th>
+<th>Faz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>webhook-ses</code></td>
+<td>O formato do <strong>SES</strong></td>
+<td>Lê o evento bruto, valida e transforma num <strong>recibo neutro</strong> (ver abaixo), e coloca na segunda fila</td>
+</tr>
+<tr>
+<td><code>relay-receipts</code></td>
+<td><strong>Nenhum provedor</strong></td>
+<td>É o &quot;webhook geral&quot;: pega qualquer recibo neutro, confere num ledger (DynamoDB) se já viu, e envia para o Relay</td>
+</tr>
+</tbody>
+</table>
+<p>Para um novo provedor (Twilio, por exemplo), basta escrever um tradutor pequeno que publica na <strong>mesma fila</strong>. O <code>relay-receipts</code> e o Relay não mudam.</p>
+<h3 id="o-recibo-neutro">O recibo neutro</h3>
+<p>Um formato único, independente do provedor:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: 1,
+  &quot;id&quot;: &quot;ses:7f3c...&quot;,
+  &quot;provider&quot;: &quot;ses&quot;,
+  &quot;providerMessageId&quot;: &quot;01030...&quot;,
+  &quot;relayMessageId&quot;: &quot;01a182e5-...&quot;,
+  &quot;channel&quot;: &quot;email&quot;,
+  &quot;recipient&quot;: &quot;ana@example.org&quot;,
+  &quot;type&quot;: &quot;bounced&quot;,
+  &quot;permanent&quot;: true,
+  &quot;reason&quot;: &quot;smtp; 550 5.1.1 user unknown&quot;,
+  &quot;occurredAt&quot;: &quot;2026-10-28T14:04:01Z&quot;
+}
+</code></pre>
+<p>Tipos: <code>sent</code>, <code>delivered</code>, <code>delayed</code>, <code>bounced</code>, <code>complained</code>, <code>rejected</code>. O <code>id</code> é derivado do evento do provedor, então o mesmo evento sempre gera o mesmo id.</p>
+<h2 id="7-3-o-que-o-relay-faz-com-o-recibo">7.3 O que o Relay faz com o recibo</h2>
+<p><code>POST /v1/receipts</code> (ADR 7):</p>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant L as Lambda relay-receipts
+  participant R as Relay API
+  participant P as Postgres
+  L-&gt;&gt;R: POST /v1/receipts (recibo neutro)
+  R-&gt;&gt;P: BEGIN, trava a mensagem (por relayMessageId ou provedor+id)
+  alt mensagem desconhecida
+    R--&gt;&gt;L: 404 (a Lambda descarta, não adianta repetir)
+  else recibo já registrado (mesmo id)
+    R--&gt;&gt;L: 200 duplicado, nada muda
+  else novo
+    R-&gt;&gt;P: INSERT do recibo
+    R-&gt;&gt;P: avança delivery_status (só para a frente)
+    opt bounce permanente ou reclamação
+      R-&gt;&gt;P: INSERT na lista de supressão
+    end
+    R--&gt;&gt;L: 202 registrado
+  end
+</pre></figure>
+<h3 id="status-que-s-anda-para-a-frente">Status que só anda para a frente</h3>
+<p>Os eventos chegam <strong>fora de ordem</strong>. Por isso o <code>delivery_status</code> tem uma hierarquia e nunca regride:</p>
+<p><code>sent</code> &lt; <code>delayed</code> &lt; <code>delivered</code> &lt; <code>bounced</code> ou <code>rejected</code> &lt; <code>complained</code></p>
+<p>Um <code>sent</code> atrasado não desfaz um <code>delivered</code>.</p>
+<h3 id="lista-de-supresso">Lista de supressão</h3>
+<p>Um <em>bounce</em> permanente ou uma reclamação põe o destinatário na tabela <code>suppressions</code>. Depois disso, <code>POST /v1/messages</code> para ele responde <strong>422</strong> antes de gravar qualquer coisa. Um bounce temporário <strong>não</strong> suprime. <code>DELETE /v1/suppressions/:canal/:destinatário</code> libera de novo. E-mails são comparados em minúsculas; telefones não são alterados.</p>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> só o envio <strong>novo</strong> é barrado. Mensagens que já estavam na fila antes do bounce ainda saem.</p>
+</blockquote>
+<h2 id="7-4-por-que-sqs-entre-as-duas-lambdas-e-no-api-gateway">7.4 Por que SQS entre as duas Lambdas, e não API Gateway</h2>
+<table>
+<thead>
+<tr>
+<th>Critério</th>
+<th><strong>SQS (escolhido)</strong></th>
+<th>API Gateway</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Relay fora do ar</td>
+<td>A fila <strong>guarda</strong> (14 dias)</td>
+<td>O recibo falha ou se perde</td>
+</tr>
+<tr>
+<td>Tentativas e fila de mortos</td>
+<td>Prontas</td>
+<td>A construir</td>
+</tr>
+<tr>
+<td>Pico de eventos</td>
+<td>O limite de concorrência protege o Relay</td>
+<td>O Relay recebe tudo de uma vez</td>
+</tr>
+<tr>
+<td>Exposição pública</td>
+<td>Nenhuma</td>
+<td>Um endpoint a autenticar e proteger</td>
+</tr>
+<tr>
+<td>Custo</td>
+<td>Menor nessa escala</td>
+<td>Maior</td>
+</tr>
+</tbody>
+</table>
+<p>O API Gateway continua sendo a ferramenta certa para provedores que <strong>empurram</strong> para nós (como o Twilio). O tradutor dele validaria a assinatura e publicaria na mesma fila.</p>
+<h2 id="7-5-logs-estruturados">7.5 Logs estruturados</h2>
+<p>As Lambdas escrevem <strong>uma linha JSON por fato</strong> no CloudWatch (retenção de 14 dias). Cada linha tem nível, mensagem, qual função e o id da invocação. Cada recibo ganha a sua linha com <code>receipt_id</code>, provedor, ids, canal, tipo, motivo e <strong>destinatário mascarado</strong> (<code>a***@example.org</code>), para os logs não virarem uma lista de endereços.</p>
+<table>
+<thead>
+<tr>
+<th>Mensagem</th>
+<th>Quando</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>receipt queued</code> / <code>receipt not queued</code></td>
+<td>O tradutor enfileirou (ou falhou ao enfileirar)</td>
+</tr>
+<tr>
+<td><code>ses event ignored</code></td>
+<td>Tipo de evento que o Relay não acompanha</td>
+</tr>
+<tr>
+<td><code>receipt delivered to relay</code></td>
+<td>O Relay respondeu <code>recorded</code> ou <code>duplicate</code></td>
+</tr>
+<tr>
+<td><code>receipt not usable by relay</code></td>
+<td><code>unmatched</code> ou <code>rejected</code></td>
+</tr>
+<tr>
+<td><code>relay unavailable, will retry</code></td>
+<td>O Relay falhou</td>
+</tr>
+<tr>
+<td><code>receipt already handled</code></td>
+<td>O ledger já tinha visto</td>
+</tr>
+</tbody>
+</table>
+<p>Para seguir uma mensagem pelas duas funções, use o CloudWatch Logs Insights filtrando por <code>relay_message_id</code>.</p>
+<h2 id="7-6-relay-terraform-tudo-da-aws-do-relay-em-cdigo">7.6 relay-terraform: tudo da AWS do Relay em código</h2>
+<table>
+<thead>
+<tr>
+<th>Arquivo</th>
+<th>Cria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.tf</code></td>
+<td>Identidade do SES, <em>configuration set</em>, destino de eventos, tópico SNS, fila <code>relay-ses-events</code> e a DLQ</td>
+</tr>
+<tr>
+<td><code>dns.tf</code></td>
+<td>Registros DKIM, SPF e DMARC (quando há zona no Route 53)</td>
+</tr>
+<tr>
+<td><code>iam.tf</code></td>
+<td>Política de envio, usuário e chave opcionais, papel opcional para EKS</td>
+</tr>
+<tr>
+<td><code>receipts.tf</code></td>
+<td>Fila <code>relay-receipts</code> e DLQ, tabela DynamoDB, as duas Lambdas, papéis, gatilhos, alarmes</td>
+</tr>
+</tbody>
+</table>
+<p>Já aplicado na conta <strong><id-da-conta></strong>, região <strong>sa-east-1</strong>: 2 Lambdas, 4 filas, 1 tabela e 2 alarmes. O código das funções vem do repositório <code>relay-receipts</code>, empacotado pelo Terraform.</p>
+<blockquote>
+<p><strong>Atenção (estado atual):</strong> a Lambda <code>relay-receipts</code> está <strong>desligada de propósito</strong> (o gatilho SQS está desabilitado) porque o Relay roda só no seu computador, e a AWS não o alcança. Os recibos ficam guardados na fila (14 dias). Para ligar, o Relay precisa de uma URL pública protegida por chave de API e depois <code>terraform apply -var relay_url=...</code>. A DLQ de eventos do SES tem 16 mensagens antigas (restos de testes) e por isso um alarme em estado ALARM.</p>
+</blockquote>
+</section>
+<section class="chapter"><h1 id="8-spillway-forecast-a-previso-de-risco-de-corte">8. spillway-forecast: a previsão de risco de corte</h1>
+<h2 id="8-1-o-que-ele-prev">8.1 O que ele prevê</h2>
+<p>Para cada hora dos próximos dias, em cada <strong>série</strong> (estado ou subsistema × fonte eólica ou solar), o modelo estima duas coisas:</p>
+<ol>
+<li><strong>O risco</strong>: a probabilidade de aquela hora ter corte de pelo menos <strong>10% da geração potencial</strong>. É um indicador estatístico, não uma garantia.</li>
+<li><strong>O corte esperado</strong>: o percentual de corte esperado para a hora.</li>
+</ol>
+<p>São <strong>27 séries</strong> modeladas (a solar do Mato Grosso do Sul tem menos de 120 dias de histórico e fica de fora).</p>
+<blockquote class="sum">
+<p><strong>Em resumo:</strong> é um &quot;termômetro de risco&quot; por hora, apoiado em cinco anos de histórico, calendário e no comportamento recente. Ele <strong>não usa clima</strong>.</p>
+</blockquote>
+<h2 id="8-2-os-dados">8.2 Os dados</h2>
+<table>
+<thead>
+<tr>
+<th>Fonte</th>
+<th>Período</th>
+<th>Origem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eólica</td>
+<td>2021-10 até hoje</td>
+<td>ONS (conjuntos), pela camada <strong>silver</strong> do <code>spillway-data</code></td>
+</tr>
+<tr>
+<td>Solar</td>
+<td>2024-04 até hoje</td>
+<td>idem (a ONS só publica a solar desde essa data)</td>
+</tr>
+</tbody>
+</table>
+<p>As linhas de 30 minutos viram <strong>séries horárias</strong> por estado, subsistema e Brasil. A &quot;geração potencial&quot; é a geração verificada mais a cortada; o percentual de corte divide uma pela outra. Horas em que o denominador é menor que 1 MWh (a solar à noite) são <strong>excluídas</strong> do treino e da avaliação, e aparecem como &quot;não aplicável&quot;.</p>
+<p>O resultado do ajuste: cerca de <strong>1,6 milhão de linhas de previsão</strong> (uma origem a cada 3 dias × 168 horas à frente), das quais ~218 mil formam o teste final.</p>
+<blockquote>
+<p><strong>Atenção (a limitação mais importante hoje):</strong> a camada silver só tem <strong>meses completos</strong> e o ONS publica o mês anterior no começo do seguinte. Por isso o último dado hoje é <strong>30/09/2026</strong>, e a previsão publicada cobre <strong>1 a 7 de outubro</strong>, ou seja, não é &quot;a próxima semana a partir de hoje&quot;. A primeira versão do projeto, que baixava direto do ONS, chegava a 27/10 porque o ONS atualiza o <strong>mês corrente</strong> aos poucos. A correção, já mergeada, é a <strong>ingestão híbrida</strong>: silver para o histórico validado + cauda do mês corrente direto do ONS, marcada como provisória. Em 28/10/2026 os dados iam até 27/10 e a janela publicada ia de 28/10 a 03/11. Nos meses em comum, silver e ONS diferem só por ruído de ponto flutuante.</p>
+</blockquote>
+<h2 id="8-3-o-que-o-modelo-recebe-as-variveis">8.3 O que o modelo recebe (as variáveis)</h2>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Exemplos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calendário da hora prevista</td>
+<td>hora, dia da semana, mês, fim de semana, <strong>feriado brasileiro</strong>, sazonalidade (seno e cosseno)</td>
+</tr>
+<tr>
+<td>Histórico do corte (só o passado)</td>
+<td>% de corte no último dia, 7, 28 e 90 dias; tendência; pico horário do último dia</td>
+</tr>
+<tr>
+<td>Geração</td>
+<td>nível de geração em 1, 7 e 28 dias</td>
+</tr>
+<tr>
+<td>Mesmo horário em dias anteriores</td>
+<td>ontem, média de 7 e de 28 dias, mesma hora na semana anterior</td>
+</tr>
+<tr>
+<td>Identificação</td>
+<td>a série e a fonte (variáveis categóricas)</td>
+</tr>
+</tbody>
+</table>
+<p>Não usa clima (vento, irradiação), preço, consumo nem informação de indisponibilidade da rede.</p>
+<h2 id="8-4-o-modelo-e-por-que-ele">8.4 O modelo e por que ele</h2>
+<p>São <strong>dois</strong> estimadores <code>HistGradientBoosting</code> do scikit-learn, treinados juntos nas mesmas variáveis: um <strong>classificador</strong> (o risco) e um <strong>regressor</strong> (o percentual esperado). Um modelo <strong>global</strong> para as 27 séries, com a série e a fonte como variáveis. Parâmetros: 250 iterações, taxa de aprendizado 0,06, 31 folhas, mínimo de 200 amostras por folha, regularização L2 igual a 1, sem parada antecipada, semente 42.</p>
+<blockquote>
+<p><strong>Por quê gradient boosting (árvores)?</strong> É a família que costuma vencer em <strong>dados tabulares com variáveis misturadas</strong> (números e categorias) e interações como &quot;de dia, em abril, no Nordeste, a eólica sofre mais&quot;. Aprende essas interações sozinho, é <strong>rápido</strong> com 1,6 milhão de linhas, lida com valores ausentes e produz <strong>probabilidades bem calibradas</strong> (o erro de calibração medido foi 0,036). Um único modelo global <strong>aprende entre séries</strong>: o padrão de uma região ajuda outra com menos histórico.</p>
+</blockquote>
+<blockquote>
+<p><strong>Por quê o HistGradientBoosting, e não LightGBM ou XGBoost?</strong> Foi escolhido por instalar sem atrito no Windows e <strong>não acrescentar dependências</strong> além do scikit-learn. Para este tamanho de dado, o desempenho esperado é equivalente.</p>
+</blockquote>
+<blockquote>
+<p><strong>Por quê não modelos por série (Prophet, ARIMA)?</strong> Seriam 27 modelos independentes, sem aprendizado compartilhado e com dificuldade de usar tantas variáveis de contexto.</p>
+</blockquote>
+<blockquote>
+<p><strong>Por quê não redes neurais (LSTM, Transformer)?</strong> Com poucos anos de dados horários e sem variáveis externas ricas, elas raramente superam árvores, exigem mais engenharia e são mais difíceis de explicar e de calibrar.</p>
+</blockquote>
+<blockquote class="warn">
+<p><strong>Honestidade:</strong> esse raciocínio é a justificativa de projeto. <strong>Os únicos comparativos medidos são contra duas linhas de base simples</strong> (abaixo). Não foram feitos testes de bancada contra Prophet, LightGBM ou redes neurais. Se isso importar para a pós ou para uma apresentação, vale executar esse comparativo.</p>
+</blockquote>
+<h2 id="8-5-as-linhas-de-base-contra-o-que-o-modelo-comparado">8.5 As linhas de base (contra o que o modelo é comparado)</h2>
+<p>Um modelo só vale se vencer alternativas simples. Foram usadas duas:</p>
+<table>
+<thead>
+<tr>
+<th>Linha de base</th>
+<th>Ideia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Climatologia</strong></td>
+<td>O risco típico por série × mês × tipo de dia (útil ou fim de semana) × hora, aprendido do passado</td>
+</tr>
+<tr>
+<td><strong>Sazonal ingênuo</strong></td>
+<td>&quot;A mesma hora na semana anterior&quot;</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-6-como-se-valida-sem-se-enganar">8.6 Como se valida (sem se enganar)</h2>
+<p>Prever o futuro exige <strong>validação temporal</strong>: nada de sorteio aleatório, que deixaria o modelo &quot;ver&quot; o futuro.</p>
+<figure class="diagram"><pre class="mermaid">gantt
+  title Janelas de validação (rolling-origin com janela crescente)
+  dateFormat YYYY-MM
+  axisFormat %Y
+  tickInterval 1year
+  section Treino (sempre cresce)
+  Treino até a dobra 1 : 2021-10, 2024-12
+  section Dobras de validação cruzada
+  Dobra 1 (3 meses) : 2025-01, 2025-03
+  Dobra 2 : 2025-04, 2025-06
+  Dobra 3 : 2025-07, 2025-09
+  Dobra 4 : 2025-10, 2025-12
+  Dobra 5 : 2026-01, 2026-03
+  section Teste final (intocado)
+  Teste final : 2026-04, 2026-09
+</pre></figure>
+<p>Regras que garantem honestidade:</p>
+<ul>
+<li><strong>5 dobras de 3 meses</strong> (2025-01 a 2026-03), cada uma treinando só com o que veio <strong>antes</strong> e com <strong>7 dias de folga</strong> (<em>embargo</em>) entre treino e teste.</li>
+<li><strong>Teste final intocado</strong> (2026-04 a 2026-09): hiperparâmetros fixos, nada ajustado nele.</li>
+<li><strong>Teste de vazamento</strong> automatizado: se alguém corromper todos os dados a partir da origem da previsão, nenhuma variável de histórico pode mudar.</li>
+<li><strong>Significância por blocos de semanas</strong>: as linhas de treino se sobrepõem muito (cada origem gera 168 horas), então o intervalo de confiança reamostra <strong>semanas</strong>, não linhas.</li>
+</ul>
+<blockquote>
+<p><strong>Por quê tanto cuidado?</strong> Em dados de séries temporais, o vazamento é fácil de criar sem querer: janelas de 28 dias precisam ser deslocadas um dia, &quot;a mesma hora na semana anterior&quot; só vale até 7 dias de horizonte, e a parada antecipada padrão do scikit-learn usa um sorteio aleatório interno. Todos esses pontos foram tratados.</p>
+</blockquote>
+<h2 id="8-7-resultados-teste-final-2026-04-a-2026-09">8.7 Resultados (teste final, 2026-04 a 2026-09)</h2>
+<table>
+<thead>
+<tr>
+<th>Modelo</th>
+<th>Erro médio (MAE, pontos percentuais)</th>
+<th>ROC-AUC</th>
+<th>Brier</th>
+<th>Erro de calibração</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Climatologia</td>
+<td>13,65</td>
+<td>0,841</td>
+<td>0,2174</td>
+<td>0,218</td>
+</tr>
+<tr>
+<td>Sazonal ingênuo</td>
+<td>11,84</td>
+<td>0,803</td>
+<td>n/d</td>
+<td>0,190</td>
+</tr>
+<tr>
+<td><strong>Gradient boosting</strong></td>
+<td><strong>10,05</strong></td>
+<td><strong>0,917</strong></td>
+<td><strong>0,1156</strong></td>
+<td><strong>0,036</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Diferença do modelo para a climatologia no MAE: <strong>−3,6 pontos percentuais</strong>, com intervalo de confiança de 95% de <strong>−4,6 a −2,5</strong> (exclui zero).</li>
+<li>Na validação cruzada (média das 5 dobras): MAE 9,45 (modelo), 11,54 (climatologia), 10,61 (sazonal ingênuo).</li>
+</ul>
+<blockquote>
+<p><strong>O que os números dizem, com honestidade:</strong></p>
+<ul>
+<li>O modelo é <strong>muito melhor que as linhas de base na classificação do risco e na calibração</strong>: quando ele diz &quot;70% de risco&quot;, acontece perto de 70% das vezes.</li>
+<li>No <strong>erro do percentual de corte</strong> o ganho é menor, e numa dobra (2025-01 a 03) o modelo ficou <strong>ligeiramente pior</strong> que a climatologia (10,57 contra 10,45).</li>
+<li>A precisão <strong>quase não cai</strong> do dia 1 ao dia 7. Isso é sinal de que o modelo é, na prática, uma &quot;climatologia adaptativa mais calendário&quot;: sem clima, ele não enxerga o vento de amanhã.</li>
+</ul>
+</blockquote>
+<h2 id="8-8-limitaes">8.8 Limitações</h2>
+<ul>
+<li><strong>Sem clima.</strong> O próximo passo natural é incluir previsão de vento e irradiação, e a carga e o preço (CMO) previstos pelo ONS.</li>
+<li><strong>Defasagem dos dados</strong> (seção 8.2).</li>
+<li>Os números &quot;apurados&quot; do ONS são <strong>revisados</strong>; o último mês pode mudar.</li>
+<li>A solar tem só ~2,5 anos de histórico; séries por estado podem ser curtas.</li>
+<li>Estado ou usina <strong>novos</strong> não existem para o modelo (as séries são fixas no treino).</li>
+<li>Não serve para decisões financeiras ou operacionais sozinho, nem para alegar compensação contratual.</li>
+</ul>
+<h2 id="8-9-como-a-previso-chega-ao-site">8.9 Como a previsão chega ao site</h2>
+<p>A decisão central (ADR 7): o Forecast <strong>publica no banco</strong>, a API <strong>lê do banco</strong>, o site chama <strong>só a API</strong>.</p>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  silver[(&quot;Silver&lt;br/&gt;data lake&quot;)] --&gt; ingest[&quot;ingest&lt;br/&gt;séries horárias&quot;]
+  ingest --&gt; train[&quot;train&lt;br/&gt;treino, validação,&lt;br/&gt;MLflow&quot;]
+  train --&gt; bundle[&quot;models/bundle.joblib&quot;]
+  bundle --&gt; publish
+  ingest --&gt; publish[&quot;publish&lt;br/&gt;pontua as 27 séries&lt;br/&gt;para 168 h&quot;]
+  publish -- &quot;uma transação&quot; --&gt; db[(&quot;Postgres&lt;br/&gt;forecast_model&lt;br/&gt;forecast_run&lt;br/&gt;forecast_hourly&quot;)]
+  db --&gt; api[&quot;spillway-api&lt;br/&gt;/v1/forecast&quot;]
+  api --&gt; web[&quot;spillway-web&lt;br/&gt;/previsao&quot;]
+</pre></figure>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant F as spillway publish
+  participant P as Postgres
+  participant A as spillway-api
+  participant W as spillway-web
+  participant U as Membro
+  F-&gt;&gt;P: BEGIN
+  F-&gt;&gt;P: INSERT forecast_model (uma vez por treino)
+  F-&gt;&gt;P: INSERT forecast_run (status loading)
+  F-&gt;&gt;P: INSERT forecast_hourly (4.536 linhas)
+  F-&gt;&gt;P: UPDATE run para ready, marca o modelo como atual
+  F-&gt;&gt;P: COMMIT (apaga rodadas antigas, guarda as 14 últimas)
+  U-&gt;&gt;W: abre /previsao
+  W-&gt;&gt;A: GET /v1/forecast, /scopes, /model
+  A-&gt;&gt;P: lê a última rodada ready (cache curto)
+  A--&gt;&gt;W: pontos + origem, data dos dados, versão do modelo
+  W--&gt;&gt;U: mapa de calor, KPIs, resultados do treino
+</pre></figure>
+<blockquote>
+<p><strong>Por quê o banco, e não uma chamada HTTP da API ao serviço de ML?</strong></p>
+<ul>
+<li>A API <strong>continua funcionando</strong> (mostrando a última previsão e a idade dela) se o job de ML estiver fora do ar.</li>
+<li>O tempo de resposta não depende de pontuar um modelo no meio da requisição.</li>
+<li>A imagem da API <strong>não precisa</strong> de scikit-learn nem de joblib.</li>
+<li>Cada previsão fica <strong>ligada à versão do modelo</strong> que a gerou (auditoria e retorno).</li>
+<li>É o mesmo padrão do pipeline: a API é dona do esquema e o produtor só escreve nas suas tabelas.</li>
+</ul>
+</blockquote>
+<p>A publicação é <strong>idempotente</strong>: rodar de novo para o mesmo modelo e a mesma origem não faz nada. Uma rodada só fica visível quando está completa (<code>ready</code>).</p>
+<h2 id="8-9-1-o-que-a-pgina-mostra">8.9.1 O que a página mostra</h2>
+<ul>
+<li>Mapa de calor do <strong>risco por hora</strong> nos próximos dias, com seletores de fonte e de região (a URL guarda a escolha, dá para compartilhar);</li>
+<li>Indicadores e um gráfico do corte esperado;</li>
+<li>Um aviso de <strong>defasagem</strong> (&quot;dados do ONS até 30/09/2026&quot;);</li>
+<li>Os <strong>resultados do treino em português simples</strong>: o que é o modelo, o período dos dados, como foi validado, a tabela contra as linhas de base, o gráfico de calibração, o peso das variáveis e as limitações;</li>
+<li>Se o serviço estiver fora, &quot;Previsão indisponível no momento&quot;.</li>
+</ul>
+<h2 id="8-10-ciclo-automtico-em-produo-local-desde-28-10-2026">8.10 Ciclo automático (em produção local desde 28/10/2026)</h2>
+<p>O ciclo abaixo está mergeado (spillway-forecast #2, spillway-api #13, spillway-web #11). O worker é um contêiner (<code>docker compose up -d --build forecast-worker</code>); sem ele, <code>uv run spillway refresh</code> faz uma atualização manual:</p>
+<figure class="diagram"><pre class="mermaid">flowchart TD
+  A[&quot;Worker vigia a cada 60 min&quot;] --&gt; B{&quot;Há dia novo no ONS&lt;br/&gt;desde a última previsão?&quot;}
+  B -- &quot;não&quot; --&gt; A
+  B -- &quot;sim&quot; --&gt; C[&quot;Reconstrói as séries&lt;br/&gt;silver + cauda do mês corrente&quot;]
+  C --&gt; D[&quot;Publica a previsão&lt;br/&gt;uma transação&quot;]
+  D --&gt; E[&quot;Avisa a API:&lt;br/&gt;revalidar a tag forecast&quot;]
+  E --&gt; F[&quot;API limpa o cache&lt;br/&gt;e o site é atualizado&quot;]
+  F --&gt; A
+  A --&gt; G{&quot;1x por dia:&lt;br/&gt;mês completo novo no silver&lt;br/&gt;e 25 dias desde o último treino?&quot;}
+  G -- &quot;não&quot; --&gt; A
+  G -- &quot;sim&quot; --&gt; H[&quot;Retreina&lt;br/&gt;mesmo protocolo honesto&quot;]
+  H --&gt; I{&quot;Portão: o modelo novo&lt;br/&gt;não é pior que o atual&lt;br/&gt;e ainda vence a climatologia?&quot;}
+  I -- &quot;sim&quot; --&gt; J[&quot;Promove e publica&quot;]
+  I -- &quot;não&quot; --&gt; K[&quot;Mantém o modelo atual&lt;br/&gt;e registra o motivo&quot;]
+  J --&gt; A
+  K --&gt; A
+</pre></figure>
+<p>Pontos de proteção do retreino automático: os dois modelos (atual e candidato) são avaliados na <strong>mesma janela de teste</strong>; a troca é <strong>atômica</strong> (o modelo antigo fica guardado); existe uma <strong>trava</strong> para nunca rodarem dois processos ao mesmo tempo; e uma falha deixa tudo como estava.</p>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o worker só roda se você o subir. Sem ele, a previsão fica parada até um <code>spillway refresh</code>. Para o site ser avisado na hora, a API precisa de <code>REVALIDATE_SECRET</code>; sem isso, o cache de 10 minutos do site vale.</p>
+</blockquote>
+<blockquote>
+<p><strong>Retreino medido:</strong> o retreino completo com os dados híbridos levou cerca de 12,5 minutos e deu MAE 10,15 pp (climatologia 13,90), ROC-AUC 0,915, ECE 0,037, no mesmo nível do primeiro treino. Portão de promoção: AUC cai no máximo 0,01, MAE sobe no máximo 0,3 pp, ECE sobe no máximo 0,02 e o candidato ainda vence a climatologia com intervalo de 95%.</p>
+</blockquote>
+<h2 id="8-11-como-rodar">8.11 Como rodar</h2>
+<pre><code>cd spillway-forecast
+uv sync --extra lake --extra warehouse
+uv run spillway ingest        # monta as séries horárias (do silver)
+uv run spillway train         # ~20 min: dobras, teste final, MLflow, models/bundle.joblib
+uv run spillway publish --dsn postgresql://warehouse:warehouse@localhost:5433/warehouse
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db     # navegar nas execuções
+uv run pytest &amp;&amp; uv run ruff check . &amp;&amp; uv run mypy
+</code></pre>
+<p>Arquivos para consultar: <code>MODEL_CARD.md</code> (ficha do modelo: uso, dados, variáveis, validação, limites), <code>reports/results.json</code> (números completos) e <code>reports/reconcile.txt</code> (conferência das somas mensais contra o warehouse, com diferença máxima de 0,0005 MWh).</p>
+</section>
+<section class="chapter"><h1 id="9-fluxos-de-ponta-a-ponta">9. Fluxos de ponta a ponta</h1>
+<p>Este capítulo junta as peças. Cada fluxo mostra <strong>quem fala com quem, em que ordem</strong>, atravessando os projetos.</p>
+<h2 id="9-1-cadastro-de-um-membro-com-cdigo-por-e-mail">9.1 Cadastro de um membro (com código por e-mail)</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  actor U as Pessoa
+  participant W as spillway-web
+  participant A as spillway-api
+  participant G as relay-api-gateway
+  participant R as Relay
+  participant S as Amazon SES
+  U-&gt;&gt;W: preenche o cadastro
+  W-&gt;&gt;A: POST /v1/auth/signup
+  alt e-mail já tem conta
+    A--&gt;&gt;W: 409 já existe
+    W--&gt;&gt;U: aviso, com links para entrar ou recuperar a senha
+  else novo
+    A-&gt;&gt;A: grava o membro (não verificado) e um código de 6 dígitos (hash)
+    A-&gt;&gt;G: POST /v1/messages (modelo, variáveis nome e código)
+    G-&gt;&gt;R: repassa (Idempotency-Key)
+    R-&gt;&gt;R: renderiza e grava na outbox
+    R--&gt;&gt;A: 202
+    A--&gt;&gt;W: 202
+    W--&gt;&gt;U: pede o código
+    R-&gt;&gt;S: envia o e-mail (HTML + texto)
+    S--&gt;&gt;U: e-mail com o código
+    U-&gt;&gt;W: digita o código
+    W-&gt;&gt;A: POST /v1/auth/verify-email
+    A-&gt;&gt;A: confere o hash, marca como verificado
+    A--&gt;&gt;W: ok
+    W-&gt;&gt;A: POST /v1/auth/login
+    A--&gt;&gt;W: token de sessão (14 dias)
+    W--&gt;&gt;U: entra no Painel
+  end
+</pre></figure>
+<blockquote>
+<p><strong>Por quê código e não link?</strong> O código se digita na própria tela, funciona no celular sem abrir outro navegador e tem limite de tentativas. É mais difícil de interceptar em encaminhamentos e prévias de e-mail.</p>
+</blockquote>
+<h2 id="9-2-um-novo-ms-do-ons-do-arquivo-ao-e-mail">9.2 Um novo mês do ONS: do arquivo ao e-mail</h2>
+<p>É o ciclo mais importante do produto. Acontece sozinho no dia 3 de cada mês.</p>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant AF as Airflow (spillway-data)
+  participant ONS as ONS
+  participant L as Data lake
+  participant DB as Postgres
+  participant A as spillway-api
+  participant W as spillway-web
+  participant R as Relay
+  actor M as Inscritos
+  AF-&gt;&gt;ONS: baixa os arquivos (se o ETag mudou)
+  AF-&gt;&gt;L: bronze, silver, quarentena
+  AF-&gt;&gt;AF: valida (quality gates)
+  AF-&gt;&gt;DB: publish: apaga e reinsere o mês (1 transação)
+  AF-&gt;&gt;A: revalidate (token de máquina)
+  A-&gt;&gt;W: invalida o cache por tags
+  AF-&gt;&gt;A: POST /v1/admin/reports (relatório com gráficos)
+  AF-&gt;&gt;A: POST /v1/admin/dispatches (kind report, mês)
+  A-&gt;&gt;DB: reserva o envio do mês (único) e lista os destinatários
+  A-&gt;&gt;R: um e-mail por pessoa, com chave de idempotência fixa
+  R--&gt;&gt;M: relatório no corpo do e-mail
+  Note over A,R: Repetir é seguro: mês já enviado responde 409, envio parcial é completado
+</pre></figure>
+<blockquote>
+<p><strong>Por quê um envio por mês, com chave por pessoa?</strong> Se o pipeline rodar de novo (ou o envio parar no meio), ninguém recebe duas vezes. O Relay responde &quot;já enviei&quot; para a mesma chave.</p>
+</blockquote>
+<h2 id="9-3-ativar-a-newsletter-na-home">9.3 Ativar a newsletter na home</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  actor U as Membro logado
+  participant W as spillway-web
+  participant A as spillway-api
+  participant R as Relay
+  U-&gt;&gt;W: clica em Receber a newsletter mensal
+  W-&gt;&gt;A: PUT /v1/auth/me/newsletter {enabled: true}
+  A-&gt;&gt;A: marca marketing_opt_in (sem confirmação)
+  A-&gt;&gt;A: monta boas-vindas e o relatório mais recente
+  A--&gt;&gt;W: perfil atualizado
+  W--&gt;&gt;U: Você habilitou a newsletter mensal
+  A-&gt;&gt;R: e-mail de boas-vindas
+  A-&gt;&gt;R: relatório mais recente (mesma chave do envio mensal)
+  R--&gt;&gt;U: dois e-mails em poucos minutos
+</pre></figure>
+<p>O relatório de boas-vindas é construído <strong>exatamente</strong> como o envio mensal o constrói, com a mesma chave de idempotência. Assim, quem ativa antes do envio do mês não recebe o relatório duas vezes.</p>
+<h2 id="9-4-baixar-a-anlise-em-pdf">9.4 Baixar a análise em PDF</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  actor U as Membro
+  participant W as spillway-web
+  participant A as spillway-api
+  participant DB as Postgres
+  U-&gt;&gt;W: Baixar, PDF (com o filtro da tela)
+  W-&gt;&gt;W: confere a sessão e valida os parâmetros
+  W-&gt;&gt;A: GET /v1/exports/analysis.pdf (escopo, fonte, período)
+  A-&gt;&gt;DB: resumo, rankings, série mensal, perfil horário
+  A-&gt;&gt;A: monta o PDF (reportlab) com todas as linhas
+  A--&gt;&gt;W: PDF
+  W--&gt;&gt;U: arquivo com o nome certo
+</pre></figure>
+<h2 id="9-5-o-recibo-de-entrega-de-um-e-mail">9.5 O recibo de entrega de um e-mail</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant R as Relay
+  participant S as SES
+  participant Q1 as SQS eventos
+  participant L1 as Lambda webhook-ses
+  participant Q2 as SQS recibos
+  participant L2 as Lambda relay-receipts
+  R-&gt;&gt;S: envia o e-mail (com o id do Relay numa tag)
+  S-&gt;&gt;Q1: evento Delivery ou Bounce ou Complaint
+  Q1-&gt;&gt;L1: lote de eventos
+  L1-&gt;&gt;L1: traduz para o recibo neutro
+  L1-&gt;&gt;Q2: enfileira
+  Q2-&gt;&gt;L2: lote
+  L2-&gt;&gt;L2: ledger: já vi este recibo?
+  L2-&gt;&gt;R: POST /v1/receipts
+  R-&gt;&gt;R: atualiza delivery_status e suprime se for bounce permanente
+</pre></figure>
+<h2 id="9-6-da-previso-ao-site">9.6 Da previsão ao site</h2>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant W as Worker do forecast
+  participant L as Lake (silver)
+  participant DB as Postgres
+  participant A as spillway-api
+  participant S as spillway-web
+  W-&gt;&gt;L: há dado mais novo?
+  L--&gt;&gt;W: sim, até o dia D
+  W-&gt;&gt;W: reconstrói as séries e pontua 168 h
+  W-&gt;&gt;DB: publica a rodada (1 transação)
+  W-&gt;&gt;A: revalidate (tag forecast)
+  A-&gt;&gt;S: invalida o cache da previsão
+  S-&gt;&gt;A: GET /v1/forecast
+  A-&gt;&gt;DB: lê a última rodada ready
+  A--&gt;&gt;S: previsão + data dos dados + versão do modelo
+</pre></figure>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o worker precisa estar rodando (capítulo 8.10) e a API precisa de <code>REVALIDATE_SECRET</code> para o site atualizar na hora.</p>
+</blockquote>
+<h2 id="9-7-esqueci-a-senha">9.7 Esqueci a senha</h2>
+<p>Segue o mesmo desenho do cadastro: a API gera um código (modelo &quot;redefinir senha&quot;), o Relay entrega, a pessoa digita o código com a nova senha, e a API troca a senha e <strong>encerra as sessões antigas</strong>.</p>
+<h2 id="9-8-resumo-onde-cada-deciso-aparece">9.8 Resumo: onde cada decisão aparece</h2>
+<table>
+<thead>
+<tr>
+<th>Fluxo</th>
+<th>Decisões em ação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cadastro</td>
+<td>Código por e-mail; Relay com outbox e idempotência; modelos de e-mail do próprio produto</td>
+</tr>
+<tr>
+<td>Novo mês</td>
+<td>Carga idempotente com reprocessamento; invalidação de cache por evento; envio único por mês</td>
+</tr>
+<tr>
+<td>Newsletter</td>
+<td>Mesma chave do envio mensal; sem confirmação para quem já verificou o e-mail</td>
+</tr>
+<tr>
+<td>Recibos</td>
+<td>Fila entre as Lambdas; recibo neutro; status que só avança</td>
+</tr>
+<tr>
+<td>Previsão</td>
+<td>Publicação pelo banco; API dona do esquema</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="chapter"><h1 id="10-operao-como-subir-onde-est-cada-coisa-o-que-fazer-quando-algo-quebra">10. Operação: como subir, onde está cada coisa, o que fazer quando algo quebra</h1>
+<h2 id="10-1-o-mapa-de-portas-ambiente-local">10.1 O mapa de portas (ambiente local)</h2>
+<table>
+<thead>
+<tr>
+<th>Serviço</th>
+<th>Porta</th>
+<th>O que é</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spillway-web (dev)</td>
+<td><strong>3002</strong></td>
+<td>O site</td>
+</tr>
+<tr>
+<td>spillway-api</td>
+<td><strong>8000</strong></td>
+<td>API do Spillway</td>
+</tr>
+<tr>
+<td>Airflow</td>
+<td><strong>8081</strong></td>
+<td>Interface do pipeline (login <code>airflow</code> / <code>airflow</code> localmente)</td>
+</tr>
+<tr>
+<td>Postgres do warehouse</td>
+<td><strong>5433</strong></td>
+<td>Banco do Spillway (<code>warehouse</code> / <code>warehouse</code>)</td>
+</tr>
+<tr>
+<td>Data lake (SeaweedFS)</td>
+<td><strong>8333</strong> (S3) e <strong>8888</strong> (navegador de arquivos)</td>
+<td>Bronze, silver, gold</td>
+</tr>
+<tr>
+<td>Relay API</td>
+<td><strong>3000</strong></td>
+<td>Mensagens</td>
+</tr>
+<tr>
+<td>Relay publisher</td>
+<td>3001</td>
+<td>Métricas do publisher</td>
+</tr>
+<tr>
+<td>relay-api-gateway</td>
+<td><strong>8080</strong></td>
+<td>Porta de entrada do Relay</td>
+</tr>
+<tr>
+<td>Postgres do Relay</td>
+<td>5432</td>
+<td>Banco do Relay</td>
+</tr>
+<tr>
+<td>Redpanda (Kafka)</td>
+<td>19092</td>
+<td>Fila</td>
+</tr>
+<tr>
+<td>Prometheus / Grafana</td>
+<td>9090 / 3030</td>
+<td>Métricas</td>
+</tr>
+<tr>
+<td>Provedores simulados</td>
+<td>8091 a 8096</td>
+<td>SMS, e-mail, WhatsApp, push de mentira</td>
+</tr>
+<tr>
+<td>Serviço de depuração do forecast</td>
+<td>8100</td>
+<td>Opcional, fora do caminho de produção</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Por quê o site na 3002?</strong> O Relay já usa a 3000 e a 3001. O Airflow ficou na 8081 (e não na 8080) porque o gateway do Relay ocupa a 8080.</p>
+</blockquote>
+<h2 id="10-2-subindo-tudo-na-ordem">10.2 Subindo tudo, na ordem</h2>
+<pre><code># 1) Relay (mensagens)
+cd relay
+docker compose up -d --build api publisher worker postgres redis redpanda
+# com PROVIDERS=providers.real.json para usar o SES de verdade
+
+# 2) Gateway do Relay
+cd ../relay-api-gateway
+docker compose up -d --build
+
+# 3) Pipeline e banco do Spillway
+cd ../energia-data
+docker compose up -d        # Airflow, lake, warehouse (use o override de porta se a 8080 estiver ocupada)
+
+# 4) Migrações do banco (cria as tabelas)
+cd ../energia-api
+DATABASE_URL=postgresql+psycopg://warehouse:warehouse@localhost:5433/warehouse uv run alembic upgrade head
+
+# 5) API do Spillway
+ENVIRONMENT=local AUTH_DISABLED=true DATABASE_URL=postgresql+psycopg://warehouse:warehouse@localhost:5433/warehouse \
+WEB_URL=http://localhost:3002 EMAIL_BACKEND=gateway GATEWAY_URL=http://localhost:8080 GATEWAY_API_KEY=... \
+uv run uvicorn app.main:app --port 8000
+
+# 6) Site
+cd ../energia-web
+API_URL=http://127.0.0.1:8000 pnpm exec next dev -p 3002
+</code></pre>
+<blockquote class="tip">
+<p><strong>Dica:</strong> para a velocidade real do site, use o build de produção em vez do <code>next dev</code>:
+<code>NEXT_DIST_DIR=.next-prod pnpm build &amp;&amp; NEXT_DIST_DIR=.next-prod pnpm exec next start -p 3002</code>.</p>
+</blockquote>
+<h2 id="10-3-dados-backfill-e-relatrios">10.3 Dados: backfill e relatórios</h2>
+<pre><code># Backfill (carrega muitos meses) pelo Airflow
+docker exec energia-data-airflow-scheduler-1 airflow dags unpause ons_curtailment_pipeline
+docker exec energia-data-airflow-scheduler-1 airflow dags trigger ons_curtailment_pipeline \
+  --conf '{&quot;first_month&quot;: &quot;2021-10&quot;, &quot;last_month&quot;: &quot;2026-09&quot;}'
+
+# Gerar e publicar os relatórios de todos os meses
+docker exec energia-data-airflow-scheduler-1 python -m energy_pipeline.report \
+  --from 2021-10 --to 2026-09 --publish --submit
+</code></pre>
+<h2 id="10-4-envios-de-e-mail">10.4 Envios de e-mail</h2>
+<table>
+<thead>
+<tr>
+<th>Quero</th>
+<th>Comando ou rota</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enviar o relatório do mês mais recente</td>
+<td><code>uv run python -m app.dispatch report</code> (na pasta da API) ou <code>POST /v1/admin/dispatches</code></td>
+</tr>
+<tr>
+<td>Terminar um envio que parou</td>
+<td>acrescentar <code>--retry</code></td>
+</tr>
+<tr>
+<td>Reenviar um mês já enviado</td>
+<td>apagar a linha do mês em <code>email_dispatch</code> (e saber que o Relay devolve &quot;já enviado&quot; para as mesmas chaves)</td>
+</tr>
+<tr>
+<td>Mandar um e-mail genérico, sem modelo</td>
+<td><code>POST /v1/messages</code> no gateway, só com <code>channel</code>, <code>to</code>, <code>subject</code> e <code>body</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-5-testes-e-verificaes-por-repositrio">10.5 Testes e verificações por repositório</h2>
+<table>
+<thead>
+<tr>
+<th>Repositório</th>
+<th>Comando</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spillway-api</td>
+<td><code>uv run ruff check . &amp;&amp; uv run mypy &amp;&amp; uv run pytest -q</code></td>
+</tr>
+<tr>
+<td>spillway-web</td>
+<td><code>pnpm exec tsc --noEmit &amp;&amp; pnpm exec eslint src &amp;&amp; pnpm exec vitest run</code></td>
+</tr>
+<tr>
+<td>spillway-data</td>
+<td><code>uv run ruff check . &amp;&amp; uv run pytest -q</code></td>
+</tr>
+<tr>
+<td>relay</td>
+<td><code>npm test</code></td>
+</tr>
+<tr>
+<td>relay-api-gateway</td>
+<td><code>pnpm test</code></td>
+</tr>
+<tr>
+<td>relay-receipts</td>
+<td><code>uv run ruff check . &amp;&amp; uv run mypy &amp;&amp; uv run pytest -q</code></td>
+</tr>
+<tr>
+<td>spillway-forecast</td>
+<td><code>uv run pytest &amp;&amp; uv run ruff check . &amp;&amp; uv run mypy</code></td>
+</tr>
+<tr>
+<td>relay-terraform e spillway-infra</td>
+<td><code>terraform fmt -check &amp;&amp; terraform validate</code></td>
+</tr>
+</tbody>
+</table>
+<p>Todos os repositórios têm <strong>CI no GitHub Actions</strong> com lint, tipos, testes, varredura de segredos e auditoria de dependências (e, nos de imagem Docker, varredura de vulnerabilidades com Trivy).</p>
+<h2 id="10-6-onde-ficam-segredos-e-configuraes">10.6 Onde ficam segredos e configurações</h2>
+<table>
+<thead>
+<tr>
+<th>O quê</th>
+<th>Onde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chaves do Relay e do gateway</td>
+<td>Arquivos <code>.env</code> <strong>fora do Git</strong> em cada repositório</td>
+</tr>
+<tr>
+<td>Chave de acesso do SES local</td>
+<td><code>.env</code> do Relay (saída do Terraform)</td>
+</tr>
+<tr>
+<td>Estado do Terraform do <code>relay-terraform</code></td>
+<td>Arquivo local, <strong>fora do Git</strong> (contém o segredo da chave IAM)</td>
+</tr>
+<tr>
+<td>Segredos de produção</td>
+<td>AWS Secrets Manager e SSM (previstos no <code>spillway-infra</code>)</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="warn">
+<p><strong>Atenção:</strong> o estado local do Terraform do <code>relay-terraform</code> guarda o segredo da chave de acesso do usuário IAM. Mantenha esse arquivo fora do Git (já está) e, para uso em equipe, migre para um backend S3 criptografado.</p>
+</blockquote>
+<h2 id="10-7-lista-de-problemas-que-j-aconteceram-e-a-soluo">10.7 Lista de problemas que já aconteceram (e a solução)</h2>
+<table>
+<thead>
+<tr>
+<th>Sintoma</th>
+<th>Causa</th>
+<th>O que fazer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Página mostra &quot;Dados indisponíveis&quot; ou lista antiga depois de carregar dados</td>
+<td>Cache de <code>fetch</code> do Next persistiu</td>
+<td>Parar o site, apagar <code>energia-web/.next/cache/fetch-cache</code>, subir de novo</td>
+</tr>
+<tr>
+<td>Rota nova da API responde 404</td>
+<td>O processo da API é antigo</td>
+<td>Reiniciar o processo da API</td>
+</tr>
+<tr>
+<td>Erro 500 ao cadastrar depois de mudar templates</td>
+<td>Processo da API antigo com arquivo de template removido</td>
+<td>Reiniciar a API</td>
+</tr>
+<tr>
+<td><code>RELAY_URL must start with http://</code> ao testar a Lambda <code>relay-receipts</code></td>
+<td>A Lambda está desligada de propósito (Relay não é público)</td>
+<td>Esperado. Ligar exige URL pública e <code>terraform apply</code></td>
+</tr>
+<tr>
+<td>Recursos &quot;não aparecem&quot; na AWS</td>
+<td>Console aberto em outra região</td>
+<td>Trocar para <strong>sa-east-1 (São Paulo)</strong></td>
+</tr>
+<tr>
+<td>Docker Desktop parou durante um build grande</td>
+<td>Falta de memória do Docker</td>
+<td>Reiniciar o Docker Desktop e subir de novo (os volumes permanecem)</td>
+</tr>
+<tr>
+<td>Porta 8080 em uso ao subir o Airflow</td>
+<td>O gateway do Relay usa a 8080</td>
+<td>Usar o override de porta (Airflow na 8081)</td>
+</tr>
+<tr>
+<td>Alarme <code>relay-dlq-ses_events</code> em ALARM</td>
+<td>16 mensagens antigas na DLQ, restos de testes</td>
+<td>Limpar a fila (<code>purge-queue</code>) quando quiser</td>
+</tr>
+<tr>
+<td>Previsão com datas antigas</td>
+<td>Último dado do ONS no silver é 30/09</td>
+<td>Já corrigido pela ingestão híbrida (capítulo 8.10): rode <code>uv run spillway refresh</code> ou suba o worker</td>
+</tr>
+<tr>
+<td><code>terraform apply</code> não mostra mudanças para recursos que &quot;sumiram&quot;</td>
+<td>Os recursos existem, em outra região</td>
+<td>Conferir a região</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-8-cuidados-antes-de-alterar-algo">10.8 Cuidados antes de alterar algo</h2>
+<ul>
+<li><strong>Banco compartilhado (warehouse):</strong> migrações e cargas escrevem nele. Rodar <code>spillway publish</code>, o backfill ou o <code>alembic upgrade</code> altera dados reais do ambiente local.</li>
+<li><strong>Nomes implantados</strong> (escopo do Cognito, ECR, usuários do banco, caminhos na EC2): não renomear sem planejar a migração.</li>
+<li><strong>SES:</strong> a conta está em sandbox; um envio de teste só vai para endereços verificados.</li>
+<li><strong>Disco:</strong> o backfill e as imagens do Docker ocupam espaço; se faltar, <code>docker system df</code> mostra o que é recuperável.</li>
+</ul>
+</section>
+<section class="chapter"><h1 id="11-as-decises-de-arquitetura-em-linguagem-simples">11. As decisões de arquitetura, em linguagem simples</h1>
+<p>Uma decisão de arquitetura é uma escolha com <strong>custo</strong>. Aqui cada uma está no mesmo formato: qual era o problema, o que foi escolhido, o que foi descartado e que custo se aceitou. Os textos completos estão nos <strong>ADRs</strong> (<em>Architecture Decision Records</em>) dentro dos repositórios.</p>
+<h2 id="11-1-spillway-adrs-do-spillway-api">11.1 Spillway (ADRs do <code>spillway-api</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decisão</th>
+<th>Problema</th>
+<th>Alternativa descartada</th>
+<th>Custo aceito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Quatro repositórios com um contrato escrito; a API é dona do esquema</strong></td>
+<td>Quatro partes que evoluem juntas podem discordar sobre tabelas e rotas</td>
+<td>Um repositório único (monorepo), ou cada parte criando suas tabelas</td>
+<td>Mudar algo compartilhado começa por um documento e passa por mais de um repositório</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>O número oficial do ONS vale; distribui-se para as usinas</strong></td>
+<td>A estimativa por usina não fecha com o total oficial</td>
+<td>Usar só a estimativa das usinas</td>
+<td>A distribuição por usina é uma regra de modelagem (explicada na metodologia)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Cargas mensais idempotentes, reprocessando os últimos 3 meses</strong></td>
+<td>O ONS revisa dados antigos; rodar de novo não pode duplicar</td>
+<td>Carregar só o mês novo e nunca revisar</td>
+<td>Mais processamento por rodada</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Invalidação do cache disparada por evento (do pipeline para o site)</strong></td>
+<td>Esperar uma hora para ver dados novos é ruim, mas consultar sempre é caro</td>
+<td>Só cache por tempo; ou nenhum cache</td>
+<td>Uma cadeia de chamadas (pipeline, API, site) que precisa de segredos</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Sem NAT gateway</strong></td>
+<td>Custa uns US$ 40 por mês parado</td>
+<td>NAT gateway em todas as redes</td>
+<td>Tarefas em sub-redes públicas, com toda a entrada fechada</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Deploy sem chaves, por OIDC, com ambiente de produção aprovado por pessoa</strong></td>
+<td>Chaves da AWS no GitHub vazam</td>
+<td>Chaves de acesso guardadas como segredo</td>
+<td>Configuração inicial de papéis e confiança</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>A previsão é publicada pelo banco, não chamada por HTTP</strong></td>
+<td>A API não pode depender de um serviço de ML estar no ar</td>
+<td>Proxy HTTP da API para o serviço de ML</td>
+<td>Uma camada de tabelas e um job de publicação</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-2-relay-adrs-do-relay">11.2 Relay (ADRs do <code>relay</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decisão</th>
+<th>Problema</th>
+<th>Alternativa descartada</th>
+<th>Custo aceito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Outbox transacional com um publicador líder</strong></td>
+<td>Escrever no banco e no Kafka separadamente perde ou duplica mensagens</td>
+<td>Publicar no Kafka direto da API</td>
+<td>Um processo a mais e um pequeno atraso até o Kafka</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Partição por destinatário, com concorrência por chave</strong></td>
+<td>Manter a ordem por pessoa sem serializar tudo</td>
+<td>Um consumidor único, ou sem ordem</td>
+<td>O paralelismo máximo é o número de partições</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Pelo-menos-uma-vez com idempotência em cada salto</strong></td>
+<td>&quot;Exatamente uma vez&quot; não existe de ponta a ponta com provedores externos</td>
+<td>Tentar garantir exatamente uma vez</td>
+<td>Um duplicado raro quando o provedor não tem chave de idempotência</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Filas de retry em camadas e fila de mortos</strong></td>
+<td>Esperar sem prender o consumidor nem usar um cronômetro por mensagem</td>
+<td>Dormir no consumidor ou agendar por mensagem</td>
+<td>Atrasos fixos (5 s, 30 s, 5 min)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Troca de provedor com circuit breaker por processo</strong></td>
+<td>Um provedor morto custaria um timeout por mensagem</td>
+<td>Estado de saúde compartilhado em um serviço</td>
+<td>Cada servidor aprende a falha por conta própria</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Limite de taxa para toda a frota num balde no Redis</strong></td>
+<td>O contrato é por conta, não por servidor</td>
+<td>Limite por processo</td>
+<td>Redis no caminho quente (sem ele, os workers param)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Recibos de provedores, status que só avança e lista de supressão</strong></td>
+<td>O que o provedor diz depois (bounce, spam) precisa voltar, e fora de ordem</td>
+<td>Ignorar os eventos</td>
+<td>Duas dimensões de status (<code>status</code> e <code>delivery_status</code>)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>O produto manda o HTML; o Relay preenche as variáveis</strong></td>
+<td>O Relay serve vários produtos e não deve virar catálogo de modelos</td>
+<td>Guardar modelos dentro do Relay</td>
+<td>O Relay não tem condicionais nem laços: o produto renderiza se precisar</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-3-relay-receipts">11.3 Relay-receipts</h2>
+<table>
+<thead>
+<tr>
+<th>Decisão</th>
+<th>Problema</th>
+<th>Escolha</th>
+<th>Custo aceito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SQS entre as duas Lambdas, não API Gateway</strong></td>
+<td>O Relay pode estar fora do ar; picos de eventos</td>
+<td>Fila (guarda por 14 dias, tentativas, DLQ, sem endpoint público)</td>
+<td>Entrega pelo-menos-uma-vez, resolvida com ledger e idempotência</td>
+</tr>
+<tr>
+<td><strong>Recibo neutro de um único formato</strong></td>
+<td>O Relay não deve conhecer o vocabulário de cada provedor</td>
+<td>Um tradutor por provedor (hoje o <code>webhook-ses</code>) e um webhook geral</td>
+<td>Escrever um tradutor novo por provedor</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-4-forecast">11.4 Forecast</h2>
+<table>
+<thead>
+<tr>
+<th>Decisão</th>
+<th>Problema</th>
+<th>Escolha</th>
+<th>Custo aceito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gradient boosting global, com duas linhas de base</strong></td>
+<td>Prever o risco por hora com histórico limitado e sem clima</td>
+<td>Árvores (HistGradientBoosting), um modelo para 27 séries</td>
+<td>Sem clima, o modelo é &quot;histórico mais calendário&quot;</td>
+</tr>
+<tr>
+<td><strong>Validação temporal com folga e teste final intocado</strong></td>
+<td>Evitar vazamento de futuro</td>
+<td>5 dobras crescentes, embargo de 7 dias, teste de vazamento</td>
+<td>Validação mais pesada (cerca de 20 minutos de treino)</td>
+</tr>
+<tr>
+<td><strong>Publicar no banco em uma transação</strong></td>
+<td>A previsão nunca pode aparecer pela metade</td>
+<td>Rodada <code>loading</code> e depois <code>ready</code></td>
+<td>Mais tabelas</td>
+</tr>
+<tr>
+<td><strong>Retreino automático com portão</strong></td>
+<td>Um modelo novo pode ser pior que o atual</td>
+<td>Promover só se não piorar e ainda vencer a climatologia</td>
+<td>Lógica extra de comparação</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-5-decises-de-produto-e-de-experincia">11.5 Decisões de produto e de experiência</h2>
+<table>
+<thead>
+<tr>
+<th>Decisão</th>
+<th>Por quê</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Só a página inicial, a metodologia e a privacidade são abertas</strong></td>
+<td>O site é um produto para membros e a base alimenta o e-mail mensal</td>
+</tr>
+<tr>
+<td><strong>Menu por pergunta</strong> (Painel, Explorar, Análises, Previsão, Relatórios)</td>
+<td>Menos itens e sem redundância entre relatórios, painel e análises</td>
+</tr>
+<tr>
+<td><strong>Comparar é uma ação</strong> dentro de Estados e Usinas</td>
+<td>Compara-se a partir de algo que se está olhando</td>
+</tr>
+<tr>
+<td><strong>Cadastro com e-mail existente avisa claramente</strong></td>
+<td>Clareza para o usuário valia mais que esconder se o e-mail existe</td>
+</tr>
+<tr>
+<td><strong>Relatório inteiro no corpo do e-mail</strong> (sem anexo por enquanto)</td>
+<td>Mais simples e mais lido; o anexo PDF fica para depois</td>
+</tr>
+<tr>
+<td><strong>Dois downloads: PDF ou dados completos</strong></td>
+<td>Um PDF completo e um conjunto de dados, em vez de muitos arquivos soltos</td>
+</tr>
+<tr>
+<td><strong>Newsletter com um clique para quem está logado</strong></td>
+<td>O e-mail já foi verificado; confirmar de novo seria atrito sem ganho</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="sum">
+<p><strong>Em resumo:</strong> quase todas as decisões trocam um pouco de simplicidade por <strong>segurança contra falha</strong> (nada se perde, nada duplica, cada serviço pode cair sozinho). Em um produto que depende de dados oficiais e de e-mail, é a troca certa.</p>
+</blockquote>
+<h2 id="11-6-novas-fontes-do-ons">11.6 Novas fontes do ONS</h2>
+<table>
+<thead>
+<tr>
+<th>Decisão</th>
+<th>Por quê</th>
+<th>Custo aceito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Um pipeline por assunto</strong> (sistema, hidrologia, rede)</td>
+<td>Isolar falhas e horários; o curtailment não muda</td>
+<td>Mais DAGs para acompanhar</td>
+</tr>
+<tr>
+<td><strong>Tabela própria para a frota</strong> (<code>power_plant</code>) em vez de ampliar <code>plant</code></td>
+<td><code>plant</code> é eólica e solar do produto de curtailment</td>
+<td>Duas tabelas de usinas, com o mesmo id</td>
+</tr>
+<tr>
+<td><strong>Cadastro da rede com histórico</strong> (<code>valid_from</code>, <code>valid_to</code>)</td>
+<td>O mapa da rede vai mostrar a expansão</td>
+<td>Uma lógica de comparação por hash no publish</td>
+</tr>
+<tr>
+<td><strong>Gates que dizem a verdade dos dados</strong> (reservatório negativo, <code>SIN</code> no balanço, ruído solar)</td>
+<td>Bloquear só o que é erro, avisar o que é incomum</td>
+<td>É preciso olhar os avisos de vez em quando</td>
+</tr>
+<tr>
+<td><strong>Backfill de hidrologia só de 2015 em diante</strong></td>
+<td>Os arquivos antigos são grandes e raros de usar</td>
+<td>O histórico anterior fica para uma execução à parte</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="chapter"><h1 id="12-estado-atual-pendncias-e-riscos">12. Estado atual, pendências e riscos</h1>
+<blockquote class="warn">
+<p><strong>Honestidade:</strong> este capítulo descreve o estado conhecido ao final da escrita desta documentação. Atualizado em 29/10/2026, depois do merge do ciclo automático do forecast.</p>
+</blockquote>
+<h2 id="12-1-o-que-est-pronto-e-funcionando-no-seu-computador">12.1 O que está pronto e funcionando (no seu computador)</h2>
+<table>
+<thead>
+<tr>
+<th>Área</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pipeline de dados</td>
+<td>Backfill completo de <strong>2021-10 a 2026-09</strong> (60 meses; eólica desde 2021-10, solar desde 2024-04). Relatórios dos 60 meses gerados, com gráficos.</td>
+</tr>
+<tr>
+<td>Site</td>
+<td>Menu por pergunta, área de membros, painel, estados, usinas, comparar, análises com download em PDF, Excel e CSV, relatórios com PDF, previsão com barra de progresso, tema claro e escuro.</td>
+</tr>
+<tr>
+<td>API</td>
+<td>Contas com código por e-mail, exportações, relatórios, disparo mensal, newsletter com um clique, boas-vindas e relatório por e-mail, previsão publicada pelo banco.</td>
+</tr>
+<tr>
+<td>Relay</td>
+<td>Plataforma completa com testes e carga; templates e variáveis; recibos de entrega; <strong>e-mails reais entregues pelo SES</strong> (verificado nos seus envios).</td>
+</tr>
+<tr>
+<td>Forecast</td>
+<td>Treinado com <strong>todos os anos</strong>, validado com protocolo temporal, publicado no banco local, com ficha do modelo na tela.</td>
+</tr>
+<tr>
+<td>Documentação</td>
+<td>Esta, em Markdown, HTML e PDF.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-2-o-que-foi-concludo-por-ltimo-e-o-que-est-aberto">12.2 O que foi concluído por último e o que está aberto</h2>
+<ul>
+<li><strong>Mergeado:</strong> ciclo automático da previsão (ingestão híbrida, worker que vigia a cada hora, tag <code>forecast</code>, aviso de defasagem, janela que parte de hoje), spillway-forecast #2, spillway-api #13 e spillway-web #11. <strong>Falta subir o worker</strong> para ele rodar sozinho.</li>
+<li><strong>Retreino mensal automático</strong> com portão de qualidade e troca atômica (mergeado, ativo quando o worker roda).</li>
+<li><strong>spillway-web #12 (aberto):</strong> gráfico de confiabilidade legível e conclusão com cuidados.</li>
+<li><strong>spillway-data #3:</strong> renomeação das referências para <code>spillway-*</code> (CI vermelho por vulnerabilidades da imagem do Airflow que já existiam).</li>
+</ul>
+<h2 id="12-3-o-que-ainda-no-existe">12.3 O que ainda não existe</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Situação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Spillway em produção na AWS</strong></td>
+<td>O Terraform está escrito e validado, mas <strong>nada foi aplicado</strong>. O roteiro de primeira implantação está no <code>spillway-infra</code>.</td>
+</tr>
+<tr>
+<td><strong>Renomear as pastas locais</strong> <code>energia-*</code> para <code>spillway-*</code></td>
+<td>Pendente: exige parar API, web e Airflow e fechar editores. O <code>docker-compose.yml</code> do <code>spillway-data</code> na <code>main</code> ainda aponta para um caminho antigo (o PR de renomeação corrige).</td>
+</tr>
+<tr>
+<td><strong>SES fora do sandbox</strong></td>
+<td>A conta só envia para endereços verificados.</td>
+</tr>
+<tr>
+<td><strong>Relay com URL pública</strong></td>
+<td>Necessário para ligar a Lambda <code>relay-receipts</code>.</td>
+</tr>
+<tr>
+<td><strong>Ciclo automático em produção</strong></td>
+<td>Hoje tudo roda localmente; em produção, o worker do forecast viraria uma tarefa do ECS.</td>
+</tr>
+<tr>
+<td><strong>Comparativo de modelos</strong></td>
+<td>Só foram medidas duas linhas de base; falta comparar com LightGBM, Prophet e redes neurais, se for importante.</td>
+</tr>
+<tr>
+<td><strong>Anexo PDF no e-mail</strong></td>
+<td>Planejado para depois (&quot;primeiro no corpo&quot;).</td>
+</tr>
+<tr>
+<td><strong>Clima na previsão</strong></td>
+<td>Próximo grande ganho possível.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-4-riscos-e-pontos-de-ateno">12.4 Riscos e pontos de atenção</h2>
+<table>
+<thead>
+<tr>
+<th>Risco</th>
+<th>Impacto</th>
+<th>Mitigação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dado do ONS com defasagem de semanas</td>
+<td>A previsão &quot;não é de hoje&quot;</td>
+<td>Ingestão híbrida da cauda do mês corrente (mergeada) e aviso claro na página</td>
+</tr>
+<tr>
+<td>Retreino automático piorar o modelo</td>
+<td>Previsão pior sem ninguém ver</td>
+<td>Portão de promoção e modelo anterior guardado</td>
+</tr>
+<tr>
+<td>Nomes antigos em recursos implantados</td>
+<td>Confusão e quebra se alguém renomear sem migrar</td>
+<td>Documentado; não renomear sem planejar</td>
+</tr>
+<tr>
+<td>Confiança do OIDC aponta para os nomes novos</td>
+<td>O deploy por GitHub Actions falha até aplicar o Terraform</td>
+<td><code>terraform apply</code> no <code>spillway-infra</code> na primeira implantação</td>
+</tr>
+<tr>
+<td>Estado local do Terraform do <code>relay-terraform</code></td>
+<td>Contém o segredo da chave IAM</td>
+<td>Fora do Git; migrar para S3 criptografado em equipe</td>
+</tr>
+<tr>
+<td>Cache local de <code>fetch</code> do Next</td>
+<td>Mostra dados antigos depois de carga</td>
+<td>Apagar <code>.next/cache/fetch-cache</code>; em produção a invalidação é automática</td>
+</tr>
+<tr>
+<td>SES em sandbox</td>
+<td>Envio só para você</td>
+<td>Pedir a saída do sandbox antes de abrir o produto</td>
+</tr>
+<tr>
+<td>Alarme da DLQ do SES em ALARM</td>
+<td>Ruído</td>
+<td>Limpar a fila de restos de teste</td>
+</tr>
+<tr>
+<td>Vulnerabilidades da imagem do Airflow</td>
+<td>CI vermelho no scan</td>
+<td>Atualizar a imagem base e os pacotes quando houver correção</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-5-prximos-passos-sugeridos">12.5 Próximos passos sugeridos</h2>
+<ol>
+<li><strong>Revisar e mergear</strong> os PRs do ciclo automático do forecast quando terminarem.</li>
+<li><strong>Colocar o Spillway no ar</strong>: seguir o roteiro do <code>spillway-infra</code>, começando pelo estado do Terraform e pelas variáveis.</li>
+<li><strong>Abrir o e-mail</strong>: tirar o SES do sandbox, e decidir se o Relay terá URL pública.</li>
+<li><strong>Observar o primeiro ciclo mensal real</strong> (dia 3): conferir o relatório publicado, o e-mail e a previsão.</li>
+<li><strong>Evoluir o modelo</strong>: incluir clima e comparar com outras famílias de modelos.</li>
+<li><strong>Anexar o PDF</strong> do relatório ao e-mail.</li>
+</ol>
+<h2 id="12-6-resumo-em-nmeros">12.6 Resumo em números</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repositórios</td>
+<td>10 (9 com GitHub)</td>
+</tr>
+<tr>
+<td>Meses de dados</td>
+<td>60 (2021-10 a 2026-09)</td>
+</tr>
+<tr>
+<td>Séries do forecast</td>
+<td>27</td>
+</tr>
+<tr>
+<td>Testes</td>
+<td>API ≈ 240, site ≈ 160, Relay 86, relay-receipts 74, data 91</td>
+</tr>
+<tr>
+<td>Capacidade medida do Relay (1 API)</td>
+<td>≈ 290 msg/s aceitas; entrega sustentada de 250 msg/s</td>
+</tr>
+<tr>
+<td>Custo mensal estimado na AWS</td>
+<td>US$ 170 a 270</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-7-novas-fontes-do-ons-fases-0-a-4">12.7 Novas fontes do ONS (fases 0 a 4)</h2>
+<table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>O que entrou</th>
+<th>Situação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Arquivos anuais até um mês e fallback parquet/csv</td>
+<td>Mergeado</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Painel do SIN: balanço, geração por fonte e por usina</td>
+<td>Mergeado</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Intercâmbio e despacho térmico</td>
+<td>Mergeado</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Água e energia (reservatórios, EAR, ENA, energia vertida)</td>
+<td>Mergeado</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Cadastro da rede com histórico</td>
+<td>Mergeado</td>
+</tr>
+</tbody>
+</table>
+<p>Ainda <strong>não existe</strong>: as telas do portal (Painel do SIN, Água e energia, Mapa da rede), que só consomem estas rotas; as coordenadas das linhas (virão da ANEEL/SIGEL); e o backfill da hidrologia antes de 2015. Nada disso foi aplicado na AWS: o Terraform do <code>spillway-infra</code> já tem as permissões novas, mas a implantação de produção continua pendente.</p>
+</section>
+<section class="chapter"><h1 id="13-glossrio">13. Glossário</h1>
+<h2 id="setor-eltrico">Setor elétrico</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Curtailment</strong></td>
+<td>Energia eólica ou solar que <strong>poderia</strong> ter sido gerada, mas foi reduzida por ordem do operador.</td>
+</tr>
+<tr>
+<td><strong>ONS</strong></td>
+<td>Operador Nacional do Sistema Elétrico: quem coordena a operação da rede e publica os dados abertos.</td>
+</tr>
+<tr>
+<td><strong>CCEE</strong></td>
+<td>Câmara de Comercialização de Energia Elétrica: forma os preços usados para valorar a energia.</td>
+</tr>
+<tr>
+<td><strong>SIN</strong></td>
+<td>Sistema Interligado Nacional (o Brasil inteiro, para este produto).</td>
+</tr>
+<tr>
+<td><strong>Subsistema</strong></td>
+<td>N, NE, S e SE (Sudeste/Centro-Oeste).</td>
+</tr>
+<tr>
+<td><strong>GNRa</strong></td>
+<td>Geração não realizada apurada: a energia cortada oficial.</td>
+</tr>
+<tr>
+<td><strong>REL</strong></td>
+<td>Corte por razão de <strong>confiabilidade elétrica</strong>.</td>
+</tr>
+<tr>
+<td><strong>CNF</strong></td>
+<td>Corte por <strong>indisponibilidade externa</strong> (equipamento fora da usina).</td>
+</tr>
+<tr>
+<td><strong>ENE</strong></td>
+<td>Corte por <strong>razão energética</strong> (mais oferta que consumo).</td>
+</tr>
+<tr>
+<td><strong>CMO</strong></td>
+<td>Custo Marginal de Operação (usado para valorar a energia cortada).</td>
+</tr>
+<tr>
+<td><strong>PLD</strong></td>
+<td>Preço de Liquidação das Diferenças (tem piso e teto anuais).</td>
+</tr>
+<tr>
+<td><strong>Compensável</strong></td>
+<td>A parte do corte (REL e CNF) que pode dar direito a ressarcimento.</td>
+</tr>
+<tr>
+<td><strong>MWh / GWh</strong></td>
+<td>Megawatt-hora e gigawatt-hora (1 GWh = 1.000 MWh).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dados-e-engenharia">Dados e engenharia</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pipeline</strong></td>
+<td>Sequência automática de passos que leva um dado da origem até o destino.</td>
+</tr>
+<tr>
+<td><strong>Airflow</strong></td>
+<td>Agendador e orquestrador de pipelines.</td>
+</tr>
+<tr>
+<td><strong>DAG</strong></td>
+<td>O desenho do pipeline: tarefas e a ordem entre elas.</td>
+</tr>
+<tr>
+<td><strong>Bronze, silver, gold</strong></td>
+<td>Camadas do data lake: original, limpo e validado, agregado para consumo.</td>
+</tr>
+<tr>
+<td><strong>Data lake</strong></td>
+<td>Armazenamento de arquivos (aqui, S3 ou SeaweedFS).</td>
+</tr>
+<tr>
+<td><strong>Backfill</strong></td>
+<td>Carregar muitos meses antigos de uma vez.</td>
+</tr>
+<tr>
+<td><strong>ETag</strong></td>
+<td>Identificador da versão de um arquivo: se não mudou, não precisa baixar de novo.</td>
+</tr>
+<tr>
+<td><strong>Idempotente</strong></td>
+<td>Que dá o mesmo resultado se for repetido; seguro de rodar de novo.</td>
+</tr>
+<tr>
+<td><strong>Migração</strong></td>
+<td>Mudança versionada no esquema do banco (Alembic).</td>
+</tr>
+<tr>
+<td><strong>ADR</strong></td>
+<td>Registro curto de uma decisão de arquitetura e seu motivo.</td>
+</tr>
+<tr>
+<td><strong>CI</strong></td>
+<td>Verificações automáticas em cada mudança de código (GitHub Actions).</td>
+</tr>
+<tr>
+<td><strong>OIDC</strong></td>
+<td>Forma de o GitHub provar sua identidade à AWS sem chaves fixas.</td>
+</tr>
+<tr>
+<td><strong>Terraform</strong></td>
+<td>Descreve infraestrutura em código.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="relay-e-mensageria">Relay e mensageria</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Outbox</strong></td>
+<td>Tabela que guarda a mensagem junto com o dado, na mesma transação, para publicá-la depois.</td>
+</tr>
+<tr>
+<td><strong>Kafka (Redpanda)</strong></td>
+<td>Fila de mensagens distribuída e durável.</td>
+</tr>
+<tr>
+<td><strong>Partição</strong></td>
+<td>Divisão de um tópico do Kafka; a mesma chave cai sempre na mesma partição.</td>
+</tr>
+<tr>
+<td><strong>Offset</strong></td>
+<td>Posição de leitura numa partição.</td>
+</tr>
+<tr>
+<td><strong>DLQ</strong></td>
+<td><em>Dead-letter queue</em>: fila de mensagens que não puderam ser processadas.</td>
+</tr>
+<tr>
+<td><strong>Circuit breaker</strong></td>
+<td>Disjuntor que para de chamar um provedor com falhas por um tempo.</td>
+</tr>
+<tr>
+<td><strong>Failover</strong></td>
+<td>Passar para outro provedor quando o primeiro falha.</td>
+</tr>
+<tr>
+<td><strong>Token bucket</strong></td>
+<td>Balde de fichas: limita quantas chamadas por segundo se pode fazer.</td>
+</tr>
+<tr>
+<td><strong>Idempotency-Key</strong></td>
+<td>Cabeçalho que identifica uma requisição, para repeti-la sem duplicar.</td>
+</tr>
+<tr>
+<td><strong>SES</strong></td>
+<td>Amazon Simple Email Service, o provedor de e-mail.</td>
+</tr>
+<tr>
+<td><strong>SNS / SQS</strong></td>
+<td>Notificação e fila da AWS.</td>
+</tr>
+<tr>
+<td><strong>Lambda</strong></td>
+<td>Função que roda na AWS sob demanda.</td>
+</tr>
+<tr>
+<td><strong>Bounce</strong></td>
+<td>E-mail devolvido (endereço inexistente, caixa cheia).</td>
+</tr>
+<tr>
+<td><strong>Complaint</strong></td>
+<td>A pessoa marcou o e-mail como spam.</td>
+</tr>
+<tr>
+<td><strong>Supressão</strong></td>
+<td>Lista de endereços para os quais não se envia mais.</td>
+</tr>
+<tr>
+<td><strong>Sandbox (SES)</strong></td>
+<td>Modo inicial em que só se envia a endereços verificados.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="previso-e-aprendizado-de-mquina">Previsão e aprendizado de máquina</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Série temporal</strong></td>
+<td>Valores medidos ao longo do tempo (aqui, por hora).</td>
+</tr>
+<tr>
+<td><strong>Climatologia</strong></td>
+<td>O valor típico para aquela época e hora, aprendido do histórico. Usada como linha de base.</td>
+</tr>
+<tr>
+<td><strong>Gradient boosting</strong></td>
+<td>Combina muitas árvores de decisão pequenas, cada uma corrigindo as anteriores.</td>
+</tr>
+<tr>
+<td><strong>Variável (feature)</strong></td>
+<td>Informação que o modelo recebe para decidir.</td>
+</tr>
+<tr>
+<td><strong>Vazamento (leakage)</strong></td>
+<td>O modelo &quot;ver&quot; informação do futuro no treino, o que infla os resultados.</td>
+</tr>
+<tr>
+<td><strong>Validação temporal</strong></td>
+<td>Testar sempre em período posterior ao do treino.</td>
+</tr>
+<tr>
+<td><strong>Embargo</strong></td>
+<td>Folga entre o fim do treino e o início do teste.</td>
+</tr>
+<tr>
+<td><strong>MAE</strong></td>
+<td>Erro absoluto médio (aqui, em pontos percentuais).</td>
+</tr>
+<tr>
+<td><strong>ROC-AUC</strong></td>
+<td>Quão bem o modelo separa horas de risco das sem risco (0,5 é sorte, 1 é perfeito).</td>
+</tr>
+<tr>
+<td><strong>Brier</strong></td>
+<td>Erro quadrático das probabilidades (menor é melhor).</td>
+</tr>
+<tr>
+<td><strong>Calibração (ECE)</strong></td>
+<td>Se &quot;70% de risco&quot; acontece mesmo ~70% das vezes (menor erro é melhor).</td>
+</tr>
+<tr>
+<td><strong>Bootstrap</strong></td>
+<td>Reamostragem para estimar a incerteza de uma diferença.</td>
+</tr>
+<tr>
+<td><strong>MLflow</strong></td>
+<td>Registro das execuções e versões dos modelos.</td>
+</tr>
+<tr>
+<td><strong>Retreino</strong></td>
+<td>Treinar de novo com os dados mais novos.</td>
+</tr>
+<tr>
+<td><strong>Defasagem (stale)</strong></td>
+<td>Idade do dado mais recente usado.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<script src="../assets/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true, securityLevel: 'loose', theme: 'base',
+  themeVariables: { primaryColor: '#e9f1ef', primaryBorderColor: '#0f766e', primaryTextColor: '#0e1b2c',
+    lineColor: '#34495e', secondaryColor: '#dbeafe', tertiaryColor: '#fef3c7', fontFamily: 'Segoe UI, Arial, sans-serif', fontSize: '13px' },
+  flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+  sequence: { useMaxWidth: true, wrap: true, mirrorActors: false, messageFontSize: 12 },
+});
+</script>
+</body></html>
